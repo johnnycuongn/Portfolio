@@ -6,6 +6,7 @@ import { FaGithub, FaLinkedin, FaGoodreads } from "react-icons/fa";
 import { SiTypescript } from "react-icons/si";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "motion/react";
+import Timeline from "./_components/Timeline";
 
 const PORTFOLIO = {
   name: "Duc Cuong Nguyen",
@@ -136,7 +137,7 @@ const ScrollSections = () => {
             <p>{PORTFOLIO.description}</p>
             <ul className="flex flex-wrap gap-4 text-xl mt-4">
                 {PORTFOLIO.techs.map((tech) => (
-                  <li className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
+                  <li key={tech} className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
                 ))}
             </ul>
           </motion.div>
@@ -150,6 +151,7 @@ const ScrollSections = () => {
         <div ref={section2Ref} className="h-full flex flex-col text-white">
           <motion.div style={{ opacity: text2Opacity, y: text2Y }}>
             <span className="text-4xl">Experience</span>
+            <Timeline />
           </motion.div>
         </div>
       </motion.div>
