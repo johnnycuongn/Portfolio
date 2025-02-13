@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, FC } from 'react';
 import { motion, Reorder, useAnimation } from 'framer-motion';
 
 interface TabItemProps {
   item: string;
 }
 
-const TabItem: React.FC<TabItemProps> = ({ item }) => {
+const TabItem: FC<TabItemProps> = ({ item }) => {
   const controls = useAnimation();
 
-  React.useEffect(() => {
+  useEffect(() => {
     controls.start({ y: [0, -5, 0], transition: { duration: 0.5 } });
     if (item === 'Home') {
       const interval = setInterval(() => {

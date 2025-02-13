@@ -2,18 +2,13 @@
 
 import { useRef, useState, useEffect } from "react";
 import { PortfolioNavBar } from "./_components/main_navigations";
-import { FaGithub, FaLinkedin, FaGoodreads } from "react-icons/fa";
-import { SiTypescript } from "react-icons/si";
+
+import { PORTFOLIO, PROFILE_LINKS } from "./PORTFOLIO";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "motion/react";
 import Timeline from "./_components/Timeline";
+import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 
-const PORTFOLIO = {
-  name: "Duc Cuong Nguyen",
-  role: "Frontend Software Engineer",
-  description: "A frontend software engineer with 2+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
-  techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL", "AWS", "Docker"]
-}
 
 const ScrollSections = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +114,7 @@ const ScrollSections = () => {
           <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
               <h1 className="text-6xl pb-4">{PORTFOLIO.name}</h1>
               <div className="text-xl pb-4">{PORTFOLIO.role}</div>
-              <div className="flex flex-row gap-4">
+              {/* <div className="flex flex-row gap-4">
                 <a href="https://github.com/johnnycuongn">
                   <FaGithub size={'25'} />
                 </a>
@@ -129,7 +124,9 @@ const ScrollSections = () => {
                 <a href="">
                   <FaGoodreads size={'25'} />
                 </a>
-              </div>
+              </div> */}
+              
+          <PublicProfilesBar items={PROFILE_LINKS} />
           </motion.div>
         </div>
         <div className="col-span-3 flex flex-col f-full px-4">
