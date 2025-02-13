@@ -11,7 +11,7 @@ import Timeline from "./_components/Timeline";
 const PORTFOLIO = {
   name: "Duc Cuong Nguyen",
   role: "Frontend Software Engineer",
-  description: "A full-stack software engineer with 2+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
+  description: "A frontend software engineer with 2+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
   techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL", "AWS", "Docker"]
 }
 
@@ -159,7 +159,7 @@ const ScrollSections = () => {
       {/* Section 3 */}
       <motion.div
         style={{ y: y3 }}
-        className="fixed top-full left-0 w-full h-full p-4 z-30"
+        className="fixed top-full left-0 w-full min-h-[200vh] p-4 z-30"
       >
         <div ref={section3Ref} className="h-screen flex flex-col text-white">
           <motion.div style={{ opacity: text3Opacity, y: text3Y }}>
