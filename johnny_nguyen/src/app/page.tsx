@@ -3,13 +3,15 @@
 import { useRef, useState, useEffect } from "react";
 import { PortfolioNavBar } from "./_components/main_navigations";
 import { FaGithub, FaLinkedin, FaGoodreads } from "react-icons/fa";
+import { SiTypescript } from "react-icons/si";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "motion/react";
 
 const PORTFOLIO = {
   name: "Duc Cuong Nguyen",
   role: "Frontend Software Engineer",
-  description: "A full-stack software engineer with 2+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects."
+  description: "A full-stack software engineer with 2+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
+  techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL", "AWS", "Docker"]
 }
 
 const ScrollSections = () => {
@@ -108,7 +110,7 @@ const ScrollSections = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center bg-slate-800">
+    <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center bg-slate-900">
       <PortfolioNavBar />
       {/* Section 1 */}
       <div ref={section1Ref} className="fixed top-0 left-0 w-full h-screen grid grid-cols-5 items-center justify-center p-4 text-white z-10">
@@ -132,6 +134,11 @@ const ScrollSections = () => {
         <div className="col-span-3 flex flex-col f-full px-4">
           <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
             <p>{PORTFOLIO.description}</p>
+            <ul className="flex flex-wrap gap-4 text-xl mt-4">
+                {PORTFOLIO.techs.map((tech) => (
+                  <li className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
+                ))}
+            </ul>
           </motion.div>
         </div>
       </div>
