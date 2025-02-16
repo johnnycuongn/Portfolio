@@ -17,7 +17,7 @@ const Trail: React.FC<TrailProps> = React.memo(({ fireflyPosition }) => {
 
   useEffect(() => {
     const newDot = { id: Date.now(), x: fireflyPosition.x, y: fireflyPosition.y };
-    setTrail(prevTrail => [...prevTrail, newDot].slice(-20)); // Keep last 20 positions
+    setTrail(prevTrail => [newDot, ...prevTrail].slice(-20)); // Keep last 20 positions
 
     const timer = setTimeout(() => {
       setTrail(prevTrail => prevTrail.slice(1)); // Remove oldest dot after 1 second
@@ -93,7 +93,6 @@ const MouseAndCat = () => {
   }, [mousePosition, dotPosition, runAway]);
 
   return (
-    <>
     <motion.div
       style={{
         width: 8,
@@ -127,8 +126,6 @@ const MouseAndCat = () => {
         />
         
     </motion.div>
-    <Trail fireflyPosition={dotPosition} />
-    </>
   );
 };
 
