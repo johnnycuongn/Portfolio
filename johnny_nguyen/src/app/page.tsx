@@ -107,19 +107,19 @@ const ScrollSections = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center bg-slate-900">
+    <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center">
       
       <PortfolioNavBar />
       {/* Section 1 */}
-      <div ref={section1Ref} className="fixed top-0 left-0 w-full h-screen grid grid-cols-5 items-center justify-center p-4 text-white z-10">
-        <div className="col-span-2 flex flex-col h-full justify-center py-16">
+      <div ref={section1Ref} className="fixed top-0 left-0 w-full h-screen grid grid-cols-1 md:grid-cols-5  md:items-center md:justify-center p-4 text-white z-10">
+        <div className="col-span-2 flex flex-col h-full justify-center md:py-16">
           <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
             <h1 className="text-6xl pb-4">{PORTFOLIO.name}</h1>
             <div className="text-xl pb-4">{PORTFOLIO.role}</div>
             <PublicProfilesBar items={PROFILE_LINKS} />
           </motion.div>
         </div>
-        <div className="col-span-3 flex flex-col f-full px-4">
+        <div className="md:col-span-3 flex flex-col f-full px-4">
           <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
             <p>{PORTFOLIO.description}</p>
             <ul className="flex flex-wrap gap-4 text-xl mt-4">
@@ -167,7 +167,7 @@ const ScrollSections = () => {
 export default function Home() {
   return (
     <div className="">
-      <main className="">
+      <main className="bg-slate-900">
         <MouseAndCat />
         <ScrollSections />
       </main>
