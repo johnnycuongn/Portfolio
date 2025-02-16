@@ -10,13 +10,10 @@
 .timeline {
   position: relative;
   white-space: nowrap;
-  max-width: 1400px;
-  padding: 0 10px;
-  margin: 0 auto;
 }
 
 .timeline ol::-webkit-scrollbar {
-  height: 5px;
+  height: 4px;
 }
 
 .timeline ol::-webkit-scrollbar-thumb,
@@ -29,15 +26,14 @@
 }
 
 .timeline ol::-webkit-scrollbar-track {
-  background: var(--midnight-green);
+  background: transparent;
 }
 
 .timeline ol {
   font-size: 0;
-  padding: 250px 0;
+  padding: 300px 0;
   transition: all 1s;
   overflow-x: scroll;
-  scroll-snap-type: x mandatory;
   scrollbar-color: var(--midnight-green);
 }
 
@@ -45,14 +41,15 @@
   position: relative;
   display: inline-block;
   list-style-type: none;
-  width: 400px;
+  width: 80vw;
+  max-width: 400px;
   height: 5px;
   background: var(--white);
   scroll-snap-align: start;
 }
 
 .timeline ol li:first-child {
-  margin-left: -350px;
+  margin-left: -380px;
 }
 
 .timeline ol li:last-child {
