@@ -5,7 +5,7 @@ import { PortfolioNavBar } from "./_components/main_navigations";
 
 import { PORTFOLIO, PROFILE_LINKS } from "./PORTFOLIO";
 
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from "motion/react";
+import { motion, useScroll, useTransform, useSpring, useMotionValue, color } from "motion/react";
 import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
@@ -135,10 +135,14 @@ const ScrollSections = () => {
         style={{ y: y2 }}
         className="fixed top-full left-0 w-full h-full p-4 z-20"
       >
-        <div ref={section2Ref} className="h-full flex flex-col text-white">
-          <motion.div style={{ opacity: text2Opacity, y: text2Y }}>
-            <span className="text-4xl">Experience</span>
-            <Timeline />
+        <div ref={section2Ref} className="h-full w-full text-white">
+          <motion.div style={{ opacity: text2Opacity, y: text2Y }}
+            className="h-full w-full flex flex-col justify-center"
+          >
+            <span className="text-4xl py-4">Experience</span>
+            <div className="flex h-full w-full">
+              <Timeline />
+            </div>
           </motion.div>
         </div>
       </motion.div>
@@ -150,7 +154,7 @@ const ScrollSections = () => {
       >
         <div ref={section3Ref} className="h-screen flex flex-col text-white">
           <motion.div style={{ opacity: text3Opacity, y: text3Y }}>
-            <span className="text-4xl">Projects</span>
+            <span className="text-4xl py-4">Projects</span>
           </motion.div>
         
         </div>

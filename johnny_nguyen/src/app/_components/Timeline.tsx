@@ -117,7 +117,7 @@ const Timeline: FC = () => {
   }, []);
 
   return (
-    <section className="timeline" ref={timelineRef}>
+    <section className="timeline w-full h-full flex flex-col justify-center" ref={timelineRef}>
       <ol className='group'>
         {TimelineData.map((item, index) => (
           <TimelineItem key={index} {...item}/>
