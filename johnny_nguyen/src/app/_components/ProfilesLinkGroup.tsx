@@ -24,18 +24,22 @@ const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) =
 
   useEffect(() => {
     if (!controls) return;
+    jumpIcons();
 
     const interval = setInterval(() => {
-      wait((index * 0.5 * 1000)).then(() => {
-        controls.start({
-          y: [0, -8, 0],
-          transition: { duration: 1 }
-        })
-      })
-    }, 8000)
+      jumpIcons();
+    }, 10000)
 
     return () => clearInterval(interval);
   }, []);
+
+  const jumpIcons = async () => {
+      await wait((index * 0.3 * 1000))
+      controls.start({
+        y: [0, -8, 0],
+        transition: { duration: 1 }
+      })
+  }
 
   const handleItemClick = (title: string) => {
     const item = PROFILE_LINKS.find(item => item.title === title);
@@ -50,7 +54,8 @@ const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) =
         className="bg-slate-900 text-white rounded cursor-grab active:cursor-grabbing select-none flex items-center gap-2 group"
         animate={controls}
         whileTap={{ scale: 0.95 }}
-        title="Drag to reorder my profiles"
+        whileHover={{ scale: 1.1 }}
+        title="Drag to reorder"
       >
         <span onClick={() => handleItemClick(title)}>
           {iconMap[title]}
