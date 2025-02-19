@@ -1,7 +1,7 @@
 
 import { v4 as uuid } from 'uuid';
 const PORTFOLIO = {
-  name: "Duc Cuong Nguyen",
+  name: "Duc (Johnny) Nguyen",
   role: "Junior Software Engineer",
   description: "A junior software engineer with 1+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
   techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL"],
