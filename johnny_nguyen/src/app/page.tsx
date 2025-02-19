@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from "react";
-import { PortfolioNavBar } from "./_components/main_navigations";
+import PortfolioNavBar from "./_components/main_navigations";
 
 import { PORTFOLIO, PROFILE_LINKS, PROJECTS } from "./PORTFOLIO";
 

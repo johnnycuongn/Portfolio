@@ -1,5 +1,6 @@
 import React, { useState, useEffect, FC } from 'react';
 import { motion, Reorder, useAnimation } from 'framer-motion';
+import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
 
 interface TabItemProps {
   item: string;
@@ -7,6 +8,8 @@ interface TabItemProps {
 
 const TabItem: FC<TabItemProps> = ({ item }) => {
   const controls = useAnimation();
+  const [isContactClicked, setIsContactClicked] = useState(false)
+  const [isCopyClicked, setIsCopyClicked] = useState(false)
 
   useEffect(() => {
     controls.start({ y: [0, -5, 0], transition: { duration: 0.5 } });
@@ -32,6 +35,29 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
     }
   }, []);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (item === 'Resume') {
+      window.open('https://drive.google.com/file/d/1MkXIev6V0o_DlBT9-1G8Apkxj6CFHrvr/view?usp=sharing', '_blank');
+    }
+    else if (item==='Contact') {
+      
+      navigator.clipboard.writeText('cuongdn2001@gmail.com');
+      if (isContactClicked) {
+        setIsCopyClicked(true)
+      }
+      else {
+        setIsCopyClicked(false)
+        setIsContactClicked(true)
+        setTimeout(() => {
+          setIsContactClicked(false)
+        }, 3000)
+      }
+      
+    }
+  };
+
+
   return (
     <Reorder.Item value={item} id={item}>
       <motion.div
@@ -39,16 +65,24 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
         whileHover={{ backgroundColor: "#4B5563" }}
         whileTap={{ scale: 0.95 }}
         animate={controls}
-        title="Drag to reorder tabs"
+        title="Drag to reorder navigation"
+        onClick={handleClick}
       >
-        {item}
+         {isContactClicked && item === 'Contact' ? (
+            <>
+            <span>Email me at cuongdn2001@gmail.com</span>
+            {isCopyClicked ? <TbCopyCheckFilled /> : <TbCopy />}
+            </>
+        ) : (
+          item
+        )}
       </motion.div>
     </Reorder.Item>
   );
 };
 
 function PortfolioNavBar() {
-  const [items, setItems] = useState(['Home', 'Resume', 'Contact']);
+  const [items, setItems] = useState(['Resume', 'Contact']);
 
   return (
     <nav className="fixed top-0 right-0 p-2 z-50">
@@ -66,4 +100,4 @@ function PortfolioNavBar() {
   );
 }
 
-export { PortfolioNavBar };
+export default PortfolioNavBar;
