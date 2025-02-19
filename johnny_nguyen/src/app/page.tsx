@@ -92,7 +92,7 @@ const MainSections = () => {
         </div>
         <div className="md:col-span-3 flex flex-col f-full px-4">
           <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
-            <p>{PORTFOLIO.description}</p>
+            <p className="md:text-lg leading-8">{PORTFOLIO.description}</p>
             <ul className="flex flex-wrap gap-4 text-xl mt-4">
                 {PORTFOLIO.techs.map((tech) => (
                   <li key={tech} className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
