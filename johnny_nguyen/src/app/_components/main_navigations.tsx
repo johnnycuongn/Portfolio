@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FC } from 'react';
-import { motion, Reorder, useAnimation } from 'framer-motion';
+import { motion, Reorder, useAnimation } from 'motion/react';
 import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
 
 interface TabItemProps {
