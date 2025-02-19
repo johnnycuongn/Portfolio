@@ -87,6 +87,14 @@
   box-sizing: border-box;  
 }
 
+
+@media (max-width: 768px) {
+
+  .timeline ol li {
+    width: 90vw; /* Increase width on mobile */
+  }
+}
+
 .timeline ol li div.item::before {
   content: "";
   position: absolute;
