@@ -33,7 +33,7 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
 
       return () => clearInterval(interval);
     }
-  }, []);
+  }, [controls, item]);
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();

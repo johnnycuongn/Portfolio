@@ -1,5 +1,5 @@
 import { motion, Reorder, useAnimation } from "motion/react";
-import { FC, JSX, memo, useEffect, useState } from "react";
+import { FC, JSX, useEffect, useState } from "react";
 import { FaGithub, FaLinkedin, FaGoodreads } from "react-icons/fa";
 import { PROFILE_LINKS } from "../PORTFOLIO";
 import wait from "@/utils/wait";
@@ -22,8 +22,17 @@ const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) =
 
   const controls = useAnimation();
 
+
+
   useEffect(() => {
     if (!controls) return;
+    const jumpIcons = async () => {
+      await wait((index * 0.3 * 1000))
+      controls.start({
+        y: [0, -8, 0],
+        transition: { duration: 1 }
+      })
+    }
     jumpIcons();
 
     const interval = setInterval(() => {
@@ -31,15 +40,7 @@ const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) =
     }, 10000)
 
     return () => clearInterval(interval);
-  }, []);
-
-  const jumpIcons = async () => {
-      await wait((index * 0.3 * 1000))
-      controls.start({
-        y: [0, -8, 0],
-        transition: { duration: 1 }
-      })
-  }
+  }, [controls, index]);
 
   const handleItemClick = (title: string) => {
     const item = PROFILE_LINKS.find(item => item.title === title);

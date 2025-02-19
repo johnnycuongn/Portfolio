@@ -13,7 +13,14 @@ interface ProjectCardProps {
 
 const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) => {
 
-  const project = PROJECTS.find(project => project.id === projectId);
+  const project = PROJECTS.find(project => project.id === projectId) ?? {
+    id: '1',
+    title: 'Emtpy',
+    image: 'Empty',
+    github: '',
+    description: '',
+    stacks: []
+  };
   const controls = useAnimation();
   const { navigating, navigate } = useDelayedLinkOpen(200)
 

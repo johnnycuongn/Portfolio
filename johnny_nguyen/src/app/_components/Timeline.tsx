@@ -1,6 +1,6 @@
 'use client'
 
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, { FC, useEffect, useRef } from 'react';
 import { FiExternalLink } from "react-icons/fi";
 import './Timeline.css';
 import { JobTimeLineItem, TimelineData } from '../PORTFOLIO';
@@ -73,7 +73,7 @@ const Timeline: FC = () => {
       let maxHeight = 0;
       items.forEach(item => {
         (item as HTMLElement).style.height = 'auto';
-        maxHeight = Math.max(maxHeight, item.offsetHeight);
+        maxHeight = Math.max(maxHeight, (item as HTMLElement).offsetHeight);
       });
       items.forEach(item => {
         (item as HTMLElement).style.height = `${maxHeight}px`;

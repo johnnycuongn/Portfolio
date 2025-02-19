@@ -28,7 +28,7 @@ const Trail: React.FC<TrailProps> = React.memo(({ fireflyPosition }) => {
 
   return (
     <>
-      {trail.map((dot, index) => (
+      {trail.map((dot) => (
         <motion.div
           key={dot.id}
           style={{
@@ -84,6 +84,7 @@ const MouseAndCat = () => {
   }, [wander]);
 
   React.useEffect(() => {
+    if (!mousePosition?.x || !mousePosition?.y) return;
     const dx = mousePosition.x - dotPosition.x;
     const dy = mousePosition.y - dotPosition.y;
     const distance = Math.sqrt(dx * dx + dy * dy);

@@ -18,9 +18,6 @@ const MainSections = () => {
   const section2Ref = useRef<HTMLDivElement>(null);
   const section3Ref = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
-  const [section2Position, setSection2Position] = useState({ x: 0, y: 0 });
-  
-  const [section3Position, setSection3Position] = useState({ x: 0, y: 0 });
 
   const { scrollY } = useScroll();
 
@@ -78,7 +75,7 @@ const MainSections = () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(timeoutId);
     };
-  }, [containerHeight])
+  }, [containerHeight, scrollToSection])
 
   return (
     <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center">
