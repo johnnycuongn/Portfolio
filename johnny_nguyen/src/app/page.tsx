@@ -5,14 +5,14 @@ import { PortfolioNavBar } from "./_components/main_navigations";
 
 import { PORTFOLIO, PROFILE_LINKS, PROJECTS } from "./PORTFOLIO";
 
-import { motion, useScroll, useTransform, useSpring, useMotionValue, color } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
 import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
 import ProjectCard from "./_components/ProjectCard";
 
 
-const ScrollSections = () => {
+const MainSections = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const section1Ref = useRef<HTMLDivElement>(null);
   const section2Ref = useRef<HTMLDivElement>(null);
@@ -25,12 +25,8 @@ const ScrollSections = () => {
   const { scrollY } = useScroll();
 
   const y2 = useTransform(scrollY, [0, containerHeight], [0, -containerHeight]);
-  const customY2 = useMotionValue(0);
-  const springY2 = useSpring(customY2, { damping: 30, stiffness: 80 });
 
   const y3 = useTransform(scrollY, [containerHeight, containerHeight*2], [0, -containerHeight]);
-  const customY3 = useMotionValue(0);
-  const springY3 = useSpring(customY3, { damping: 30, stiffness: 80 });
 
   // Text animations
   const text1Opacity = useTransform(scrollY, [0, containerHeight / 2], [1, 0]);
@@ -42,70 +38,47 @@ const ScrollSections = () => {
   const text3Opacity = useTransform(scrollY, [containerHeight * 1.5, containerHeight * 2], [0, 1]);
   const text3Y = useTransform(scrollY, [containerHeight * 1.5, containerHeight * 2], [50, 0]);
 
-  // Implement magnetic scroll for section 2
-  useEffect(() => {
-    return y2.on("change", (latest: number) => {
-      if (latest > - 150) {
-        customY2.set(0);
-      }
-      else if (latest > -containerHeight + 150) {
-        // Regular scroll behavior when not close to snapping point
-        customY2.set(latest);
-       
-      } else if (latest <= -containerHeight + 150) {
-        // Snap to fully in view when very close
-        customY2.set(-containerHeight);
-      }
+
+  const scrollToSection = (sectionNumber: number) => {
+    window.scrollTo({
+      top: containerHeight * (sectionNumber - 1),
+      behavior: 'smooth'
     });
-
-  }, [y2, customY2, springY2, containerHeight]);
-  
-  // Implement magnetic scroll for section 3
-  useEffect(() => {
-
-    return y3.on("change", (latest: number) => {
-      if (latest > - 150) {
-        customY3.set(0);
-      }
-      else if (latest > -containerHeight + 150) {
-        // Regular scroll behavior when not close to snapping point
-        customY3.set(latest);
-      } else if (latest <= -containerHeight + 150) {
-        // Snap to fully in view when very close
-        customY3.set(-containerHeight);
-      }
-    });
-
-  }, [y3, customY3, springY3, containerHeight]);
+  };
 
   useEffect(() => {
+    console.log('container current, ', containerRef.current, window.innerHeight);
+    if (!containerRef.current) return;
     if (containerRef.current) {
       setContainerHeight( window.innerHeight);
     }
+    
   }, []);
 
   useEffect(() => {
-    let animationFrameId;
+    let timeoutId: NodeJS.Timeout;
 
-    const trackSectionsPosition = () => {
-      if (section2Ref.current && section3Ref.current) {
-        const rect = section2Ref.current.getBoundingClientRect();
-        setSection2Position({ x: rect.left, y: rect.top });
+    if (containerHeight === 0) return;
 
-        const rect3 = section3Ref.current.getBoundingClientRect();
-        setSection3Position({ x: rect3.left, y: rect3.top });
-      }
-      animationFrameId = requestAnimationFrame(trackSectionsPosition);
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+
+      timeoutId = setTimeout(() => {
+        const scrollPosition = window.scrollY;
+        console.log('Scroll Position', scrollPosition);
+        console.log('Container Heihgt', containerHeight);
+        const sectionNumber = Math.round(scrollPosition / containerHeight) + 1;
+        scrollToSection(sectionNumber);
+      }, 100); // Adjust this delay as needed
     };
 
-    trackSectionsPosition();
+    window.addEventListener('scroll', handleScroll);
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeoutId);
     };
-  }, []);
+  }, [containerHeight])
 
   return (
     <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center">
@@ -190,7 +163,7 @@ export default function Home() {
     <div className="">
       <main className="bg-slate-900">
         <MouseAndCat />
-        <ScrollSections />
+        <MainSections />
       </main>
    
     </div>
