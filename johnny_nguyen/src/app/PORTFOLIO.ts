@@ -4,7 +4,7 @@ const PORTFOLIO = {
   name: "Duc Cuong Nguyen",
   role: "Junior Software Engineer",
   description: "A junior software engineer with 1+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
-  techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL", "AWS", "Docker"],
+  techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL"],
 }
 
 const PROFILE_LINKS = [
@@ -51,7 +51,7 @@ const JobTimelineData: JobTimeLineItem[] = [
     company: 'Queensland Murray Darling Catchment',
     link: 'https://qmdcl.org.au/',
     content: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, and improved the existing web app for data visualization.',
-    stacks: ['React', 'React Native','Typescript', 'Node.js', 'Firebase']
+    stacks: ['React', 'React Native','Typescript', 'Node.js', 'Material UI', 'Firebase']
     }
 ];
 
