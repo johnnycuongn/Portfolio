@@ -5,26 +5,12 @@ import { FiExternalLink } from "react-icons/fi";
 import './Timeline.css';
 import { JobTimeLineItem, TimelineData } from '../PORTFOLIO';
 import { motion, useAnimation } from 'motion/react';
+import useDelayedLinkOpen from '@/utils/useDelayLinkOpen';
 
-const useDelayedNavigation = (delay: number) => {
-  const [navigating, setNavigating] = useState(false);
-  const [, setDestination] = useState('');
-
-  const navigate = (url: string) => {
-    setNavigating(true);
-    setDestination(url);
-    setTimeout(() => {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setNavigating(false);
-    }, delay);
-  };
-
-  return { navigating, navigate };
-};
 
 const TimelineItem: FC<JobTimeLineItem> = ({ year, title, company, content, link, stacks }) => {
   const controls = useAnimation();
-  const { navigating, navigate } = useDelayedNavigation(200); // 500ms delay
+  const { navigating, navigate } = useDelayedLinkOpen(200);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -53,7 +39,7 @@ const TimelineItem: FC<JobTimeLineItem> = ({ year, title, company, content, link
     <a href={link} onClick={handleClick} className="absolute inset-0" aria-label={`Link to ${title} project`}></a>
       <span className='text-sm text-gray-400'>{year}</span>
      
-      <span className='title inline-flex items-center transition-all group-hover/item:text-teal-300'>
+      <span className='text-lg inline-flex items-center transition-all group-hover/item:text-teal-300'>
           {title} • {company}
           <motion.span 
             className='inline-block ml-2'
@@ -63,7 +49,7 @@ const TimelineItem: FC<JobTimeLineItem> = ({ year, title, company, content, link
             <FiExternalLink />
           </motion.span>
       </span>
-      <div className='break-words transition-all flex-grow text-sm text-gray-400 group-hover/item:text-white'>
+      <div className='mb-4 break-words transition-all flex-grow text-sm text-gray-300 group-hover/item:text-white'>
         {content}
       </div>
       <div className='flex flex-wrap gap-1'>
