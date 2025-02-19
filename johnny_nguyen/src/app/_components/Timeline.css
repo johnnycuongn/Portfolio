@@ -90,6 +90,10 @@
 
 @media (max-width: 768px) {
 
+  .timeline ol li:first-child {
+    margin-left: -300px;
+  }
+
   .timeline ol li {
     width: 90vw; /* Increase width on mobile */
   }
