@@ -13,9 +13,9 @@ interface ProfileLinkGroupItemProps extends PublicProfile {
 }
 
 const iconMap: { [key: string]: JSX.Element } = {
-  GitHub: <FaGithub size={'25'}/>,
-  LinkedIn: <FaLinkedin size={'25'}/>,
-  Goodreads: <FaGoodreads size={'25'}/>
+  GitHub: <FaGithub size={'35'}/>,
+  LinkedIn: <FaLinkedin size={'35'}/>,
+  Goodreads: <FaGoodreads size={'3s5'}/>
 };
 
 const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) => {
