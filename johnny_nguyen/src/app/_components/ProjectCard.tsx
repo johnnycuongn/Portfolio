@@ -60,7 +60,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
       key={projectId}
       className={(className ?? '') + ' bg-slate-800 md:p-3 md:m-4 rounded-lg shadow-lg max-h-200 '}>
         <div 
-          className={'relative flex flex-col h-full group/item ' + (isLastOdd ? '' : 'md:flex-row')}
+          className={'overflow-auto relative flex flex-col h-full group/item ' + (isLastOdd ? '' : 'md:flex-row')}
           onClick={handleProjectClicked}
         >
           <div className="relative flex-shrink-0 w-full md:w-1/2 h-48 md:h-full">
@@ -75,7 +75,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
               priority={index === 0} // Prioritize the first project image for better LCP
             />
           </div>
-          <div className="flex flex-col overflow-auto p-5">
+          <div className="flex flex-col p-5">
             <div>
               <h1 className="text-xl font-semibold text-white md:text-2xl transition-all group-hover/item:text-teal-300">
                 {project.title}
@@ -88,7 +88,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
                   <FiExternalLink />
                 </motion.span>
               </h1>
-              <p className="mt-2 text-sm/7 md:text-base text-gray-200">
+              <p className="mt-2 text-md/7 md:text-base text-gray-200">
                 {project.description}
               </p>
             </div>

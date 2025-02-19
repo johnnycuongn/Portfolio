@@ -92,7 +92,7 @@ const MainSections = () => {
         </div>
         <div className="md:col-span-3 flex flex-col f-full px-4">
           <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
-            <p className="md:text-lg leading-8">{PORTFOLIO.description}</p>
+            <p className="text-md md:text-lg leading-8">{PORTFOLIO.description}</p>
             <ul className="flex flex-wrap gap-4 text-xl mt-4">
                 {PORTFOLIO.techs.map((tech) => (
                   <li key={tech} className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
@@ -121,9 +121,9 @@ const MainSections = () => {
       {/* Section 3 */}
       <motion.div
         style={{ y: y3 }}
-        className="fixed top-full left-0 w-full h-full p-4 z-30"
+        className="fixed top-full left-0 w-full h-full flex flex-col p-4 z-30"
       >
-        <div ref={section3Ref} className="h-full w-full flex flex-col text-white">
+        <div ref={section3Ref} className="grow h-full w-full flex flex-col text-white">
           <motion.div
             style={{ opacity: text3Opacity, y: text3Y }}
             className="h-full w-full flex flex-col justify-center"
@@ -147,8 +147,15 @@ const MainSections = () => {
             </div>
 
           </motion.div>
-        
         </div>
+        <footer className="grow-0 text-center min-h-24 w-full pt-4 pb-8 text-gray-400">
+          <p>
+            Made with <a href="https://nextjs.org/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-300">Next.js</a> and <a href="https://www.framer.com/motion/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-300">Framer Motion</a>. Hosted on <a href="https://vercel.com/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-300">Vercel</a>.
+          </p>
+          <p className="mt-2">
+            © {new Date().getFullYear()} Duc Nguyen. All rights reserved.
+          </p>
+        </footer>
       </motion.div>
     </div>
 

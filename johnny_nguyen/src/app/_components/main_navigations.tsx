@@ -52,7 +52,7 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
         setIsContactClicked(true)
         setTimeout(() => {
           setIsContactClicked(false)
-        }, 3000)
+        }, 5000)
       }
       
     }

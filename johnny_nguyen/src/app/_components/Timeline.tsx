@@ -39,7 +39,7 @@ const TimelineItem: FC<JobTimeLineItem> = ({ year, title, company, content, link
     <a href={link} onClick={handleClick} className="absolute inset-0" aria-label={`Link to ${title} project`}></a>
       <span className='text-sm text-gray-400'>{year}</span>
      
-      <span className='text-lg inline-flex items-center transition-all group-hover/item:text-teal-300'>
+      <span className='text-xl inline-flex items-center transition-all group-hover/item:text-teal-300'>
           {title} • {company}
           <motion.span 
             className='inline-block ml-2'
@@ -49,7 +49,7 @@ const TimelineItem: FC<JobTimeLineItem> = ({ year, title, company, content, link
             <FiExternalLink />
           </motion.span>
       </span>
-      <div className='mb-4 break-words transition-all flex-grow text-sm text-gray-300 group-hover/item:text-white'>
+      <div className='mb-4 break-words transition-all flex-grow text-md text-gray-300 group-hover/item:text-white'>
         {content}
       </div>
       <div className='flex flex-wrap gap-1'>
