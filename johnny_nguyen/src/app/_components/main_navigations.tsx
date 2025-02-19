@@ -1,6 +1,7 @@
 import React, { useState, useEffect, FC } from 'react';
 import { motion, Reorder, useAnimation } from 'motion/react';
 import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
+import { PORTFOLIO } from '../PORTFOLIO';
 
 interface TabItemProps {
   item: string;
@@ -38,7 +39,7 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (item === 'Resume') {
-      window.open('https://drive.google.com/file/d/1MkXIev6V0o_DlBT9-1G8Apkxj6CFHrvr/view?usp=sharing', '_blank');
+      window.open(PORTFOLIO.resume_link, '_blank');
     }
     else if (item==='Contact') {
       
