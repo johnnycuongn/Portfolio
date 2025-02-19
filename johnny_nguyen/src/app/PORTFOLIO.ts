@@ -60,5 +60,31 @@ const JobTimelineData: JobTimeLineItem[] = [
     }
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS };
+const PROJECTS = [
+  {
+    id: uuid(),
+    title: 'Smart Inventory Management System',
+    github: 'https://github.com/johnnycuongn/Inventory-Management-Sytem',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
+    description: 'A Smart Inventory System leveraging RFID technology to enhance efficiency in Inbound and Outbound Warehouse Processes.',
+    stacks: ["React", "Typescript", "Node.js", "MongoDB", "Vercel"]
+  },
+  {
+    id: uuid(),
+    title: 'Supplier Receipt Tracker',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/sp_app/master/github_resources/poster.png',
+    github: 'https://github.com/johnnycuongn/sp_app',
+    description: 'The Supplier Receipt Tracker is designed to streamline invoice management for businesses in Retail, Manufacturing, Construction, and Hospitality sectors. This intuitive platform helps users track both digital and physical invoices, providing a comprehensive dashboard to monitor financial health.',
+    stacks: ["React", "Typescript", "Firebase"]
+  },
+  {
+    id: uuid(),
+    title: 'QMDCL Water Quality Monitoring Platform',
+    image: '',
+    github: '',
+    description: ''
+  }
+]
+
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS };
 export type { JobTimeLineItem };

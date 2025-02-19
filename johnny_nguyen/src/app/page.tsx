@@ -3,12 +3,13 @@
 import { useRef, useState, useEffect } from "react";
 import { PortfolioNavBar } from "./_components/main_navigations";
 
-import { PORTFOLIO, PROFILE_LINKS } from "./PORTFOLIO";
+import { PORTFOLIO, PROFILE_LINKS, PROJECTS } from "./PORTFOLIO";
 
 import { motion, useScroll, useTransform, useSpring, useMotionValue, color } from "motion/react";
 import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
+import ProjectCard from "./_components/ProjectCard";
 
 
 const ScrollSections = () => {
@@ -150,11 +151,31 @@ const ScrollSections = () => {
       {/* Section 3 */}
       <motion.div
         style={{ y: y3 }}
-        className="fixed top-full left-0 w-full min-h-[200vh] p-4 z-30"
+        className="fixed top-full left-0 w-full h-full p-4 z-30"
       >
-        <div ref={section3Ref} className="h-screen flex flex-col text-white">
-          <motion.div style={{ opacity: text3Opacity, y: text3Y }}>
+        <div ref={section3Ref} className="h-full w-full flex flex-col text-white">
+          <motion.div
+            style={{ opacity: text3Opacity, y: text3Y }}
+            className="h-full w-full flex flex-col justify-center"
+          >
             <span className="text-4xl py-4">Projects</span>
+            <div className="w-full h-full grid grid-flow-col grid-rows-2 md:grid-rows-4 gap-4">
+               
+              {/* Project 1 */}
+              <ProjectCard index={0} projectId={PROJECTS[0].id} 
+                className="md:col-span-2 md:row-span-2"
+              />
+              {/* Project 2 */}
+              <ProjectCard index={1} projectId={PROJECTS[1].id}
+                className="md:col-span-2 md:row-span-2"
+              />
+              {/* Project 3
+              <ProjectCard index={2} projectId={PROJECTS[2].id}
+                className="md:row-span-4"
+              /> */}
+
+            </div>
+
           </motion.div>
         
         </div>
