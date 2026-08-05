@@ -58,9 +58,9 @@ interface JobTimeLineItem {
 }
 const JobTimelineData: JobTimeLineItem[] = [
   {
-    year: 'Nov 2025 - Present', 
+    year: 'Mar 2025 - Present', 
     title: 'Software Engineer', 
-    content: "I have worked on more than 4 enterprise systems across various industry sectors, owning features and complex workflows, for example invoicing and auditing, under tight deadlines and fast-paced sprint cycles. In this role, I also provide technical ownership, including AWS infrastructure, deployment pipelines with GitHub Actions, feature analysis, and UI/UX design.",
+    content: "Worked on enterprise systems across various industry sectors, including fiance, advertising compliance, NDIS and insurance. Owned the development of new features, infrastructure, and solutions end-to-end.",
     axisLabel: 'Now',
     company: 'iMSX',
     link: 'https://imsx.com.au/',
@@ -69,28 +69,28 @@ const JobTimelineData: JobTimeLineItem[] = [
   {
     year: 'Nov 2024 - Feb 2025', 
     title: 'Software Engineer Intern', 
-    content: "Managed and built License Management System from the ground up, which is used to manage Sharepoint Licenses for over 10 clients.",
+    content: "Built and managed a License Management System from the ground up, used to administer SharePoint licenses for 20+ clients.",
     axisLabel: '2024–25',
     company: 'WebVine',
     link: 'https://webvine.com.au/',
     stacks: ['React', 'Next.js', 'Typescript', 'TailwindCSS', '.NET Core', 'Sharepoint SPFx', 'Azure'],
   },
   {
-    year: 'Feb - Oct 2023',
+    year: 'Feb 2023 - Oct 2023',
     title: 'Junior Software Engineer',
     axisLabel: '2023',
-    company: 'Orefox AI',
-    content: 'Worked closely with senior engineers to improve current Orefox GeoDesk platforms and new apps. Responsible for advanced features including GeoDesk Scrum Board, Geological Map, Marketplace Platform, and Geologist Chat Platform',
+    company: 'OreFox AI',
+    content: 'Worked closely with senior engineers to improve the Orefox GeoDesk platform and build new apps, owning advanced features including the Scrum Board, Geological Map, Marketplace, and Geologist Chat platform."',
     link: 'https://orefox.com/',
-    stacks: ['React', 'Typescript', 'jQuery', 'Django', 'PostgreSQL', 'GeoDjango'],
+    stacks: ['React', 'Typescript', 'jQuery', 'Django', 'PostgreSQL', 'GeoDjango', 'AWS'],
   },
   {
-    year: 'Mar - Dec 2022',
+    year: 'Mar 2022 - Dec 2022',
     title: 'Software Engineer',
     axisLabel: '2022',
     company: 'Queensland Murray Darling Catchment',
     link: 'https://qmdcl.org.au/',
-    content: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, and improved the existing web app for data visualization.',
+    content: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, migrated from Excel to admin platform for data visualisation and analytics.',
     stacks: ['React', 'React Native','Typescript', 'Node.js', 'Material UI', 'Firebase']
     }
 ];
@@ -123,10 +123,10 @@ const PROJECTS: Project[] = [
   },
   {
     id: uuid(),
-    title: 'QMDCL Water Quality Monitoring Platform',
+    title: 'Water Quality Monitoring Platform',
     image: '',
-    github: '',
-    description: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, and improved the existing web app for data visualization.',
+    github: 'https://qmdcl.org.au/services-queensland-murray-darling-catchment/',
+    description: 'Allow river rangers to collect water quality data in their tablets, and sync the data with site managers',
     stacks: ["React", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
   }
 ];
