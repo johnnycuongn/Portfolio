@@ -10,6 +10,7 @@ import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
 import ProjectRail from "./_components/ProjectRail";
+import FireflyChat from "./_components/FireflyChat";
 
 
 const heroStagger = {
@@ -174,6 +175,7 @@ export default function Home() {
     <div className="">
       <main className="bg-slate-900">
         <MouseAndCat />
+        <FireflyChat />
         <MainSections />
       </main>
    
