@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  outputFileTracingIncludes: {
+    '/api/chat': ['./src/app/_ai/about-johnny.md'],
+  },
 };
 
 export default nextConfig;
