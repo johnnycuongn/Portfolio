@@ -234,10 +234,19 @@ on close; `aria-live="polite"` on replies; `aria-label` on the beacon. Under
 Three caps in the route: 500 characters per message, 8 messages of history forwarded, 300
 max output tokens.
 
-Then in-memory counters in `limits.ts`: ~10 messages/hour per IP, ~200/day site-wide, reset
-on cold start. This is leaky by nature on serverless and that is accepted — it stops the
-bored visitor, and the true ceiling is Groq's own free-tier limit, which returns 429 rather
-than a charge.
+Then in-memory counters in `limits.ts`: 10 messages/hour per IP, 120/day site-wide, reset on
+cold start. This is leaky by nature on serverless and that is accepted — it stops the bored
+visitor, and the true ceiling is Groq's own free-tier limit, which returns 429 rather than
+a charge.
+
+Groq's free tier for `llama-3.3-70b-versatile` measured mid-2026: 30 RPM, 1,000
+requests/day, 12K tokens/minute, 100K tokens/day. The token ceiling binds first — at
+roughly 1,900 tokens per exchange that is about 50 messages a day, below our own 120 guard.
+Two consequences: the site-wide cap is a backstop rather than the real limit, and heavy
+days will end in fallback answers by design. Groq excludes cached tokens from these limits
+and the system prompt is constant, so it should cache well. If the ceiling proves too
+tight, `llama-3.1-8b-instant` has far more daily headroom at some cost to voice — an env
+var change, no code.
 
 **No payment method on the Groq account is the actual guarantee that this cannot cost
 money.** The rate limiting is for quota preservation, not for billing safety.
