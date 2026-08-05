@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 const PORTFOLIO = {
   name: "Duc (Johnny) Nguyen",
   role: "Software Engineer",
-  description: "A product-focused software engineer, passionate about building scalable and efficient software solutions. Experienced in full-stack development, cloud computing, and database management.",
+  description: "A product-focused software engineer, passionate about building scalable and efficient software solutions. Strong focus on scalable architecture and clean, testable code, with experience owning features end to end from system design to deployment.",
   techs: ["Typescript", "AWS", "Node.js", ".NET Core", "PostgreSQL", "MySQL"],
   email: 'cuongdn2001@gmail.com',
   resume_link: 'https://drive.google.com/file/d/1D_E7dgsFJ0QsSITeFXiBe83FADG9Xslm/view?usp=sharing'
