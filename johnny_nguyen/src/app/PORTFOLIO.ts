@@ -107,11 +107,19 @@ interface Project {
 const PROJECTS: Project[] = [
   {
     id: uuid(),
+    title: 'Support Guides Content Management System',
+    github: 'https://www.hearingmattersaustralia.org/',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
+    description: 'A Content Management System for Hearing Matters Australia, a non-profit organisation. The CMS allows the organisation to manage their website content, including news, events, and resources.',
+    stacks: ["React", "Typescript", "Firebase"]
+  },
+  {
+    id: uuid(),
     title: 'Smart Inventory Management System',
     github: 'https://github.com/johnnycuongn/Inventory-Management-Sytem',
     image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
     description: 'A Smart Inventory System leveraging RFID technology to enhance efficiency in Inbound and Outbound Warehouse Processes.',
-    stacks: ["React", "Typescript", "Node.js", "MongoDB", "Vercel"]
+    stacks: ["React", "Chart.js", "Typescript", "Node.js", "MongoDB", "Vercel"]
   },
   {
     id: uuid(),
@@ -119,15 +127,15 @@ const PROJECTS: Project[] = [
     image: 'https://raw.githubusercontent.com/johnnycuongn/sp_app/master/github_resources/poster.png',
     github: 'https://github.com/johnnycuongn/sp_app',
     description: 'The Supplier Receipt Tracker is designed to streamline invoice management for businesses in Retail, Manufacturing, Construction, and Hospitality sectors. This intuitive platform helps users track both digital and physical invoices, providing a comprehensive dashboard to monitor financial health.',
-    stacks: ["React", "Typescript", "Firebase"]
+    stacks: ["React", "Typescript", "Firebase", "Chart.js"]
   },
   {
     id: uuid(),
     title: 'Water Quality Monitoring Platform',
-    image: '',
+    image: 'https://github.com/johnnycuongn/Portfolio/blob/master/Public/masked_events_data_tab.png?raw=true',
     github: 'https://qmdcl.org.au/services-queensland-murray-darling-catchment/',
     description: 'Allow river rangers to collect water quality data in their tablets, and sync the data with site managers',
-    stacks: ["React", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
+    stacks: ["React", "Chart.js", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
   }
 ];
 
