@@ -2,9 +2,10 @@
 import { v4 as uuid } from 'uuid';
 const PORTFOLIO = {
   name: "Duc (Johnny) Nguyen",
-  role: "Junior Software Engineer",
+  role: "Software Engineer",
   description: "A junior software engineer with 1+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
-  techs: ["Typescript", "React", "Node.js", ".NET Core", "PostgreSQL"],
+  techs: ["Typescript", ".NET", "Node.js", ".NET Core", "PostgreSQL"],
+  email: 'cuongdn2001@gmail.com',
   resume_link: 'https://drive.google.com/file/d/1D_E7dgsFJ0QsSITeFXiBe83FADG9Xslm/view?usp=sharing'
 }
 
@@ -39,10 +40,18 @@ const JobTimelineData: JobTimeLineItem[] = [
     stacks: ['React', 'Next.js', 'Typescript', 'TailwindCSS', '.NET Core', 'Sharepoint SPFx', 'Azure'],
   },
   {
+    year: 'Nov 2024 - Feb 2025', 
+    title: 'Software Engineer Intern', 
+    content: "Managed and built License Management System from the ground up, which is used to manage Sharepoint Licenses for over 10 clients.",
+    company: 'WebVine',
+    link: 'https://webvine.com.au/',
+    stacks: ['React', 'Next.js', 'Typescript', 'TailwindCSS', '.NET Core', 'Sharepoint SPFx', 'Azure'],
+  },
+  {
     year: 'Feb - Oct 2023',
     title: 'Junior Software Engineer',
     company: 'Orefox AI',
-    content: 'Worked closely with senior engineers to improve current Orefox GeoDesk\' platforms and new apps. Responisble for advanced features inlcuding GeoDesk Scrum Board, Geological Map, Marketplace Platform, and Geologist Chat Platform',
+    content: 'Worked closely with senior engineers to improve current Orefox GeoDesk platforms and new apps. Responsible for advanced features including GeoDesk Scrum Board, Geological Map, Marketplace Platform, and Geologist Chat Platform',
     link: 'https://orefox.com/',
     stacks: ['React', 'Typescript', 'jQuery', 'Django', 'PostgreSQL', 'GeoDjango'],
   },
@@ -57,6 +66,14 @@ const JobTimelineData: JobTimeLineItem[] = [
 ];
 
 const PROJECTS = [
+  {
+    id: uuid(),
+    title: 'Smart Inventory Management System',
+    github: 'https://github.com/johnnycuongn/Inventory-Management-Sytem',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
+    description: 'A Smart Inventory System leveraging RFID technology to enhance efficiency in Inbound and Outbound Warehouse Processes.',
+    stacks: ["React", "Typescript", "Node.js", "MongoDB", "Vercel"]
+  },
   {
     id: uuid(),
     title: 'Smart Inventory Management System',

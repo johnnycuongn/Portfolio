@@ -1,8 +1,9 @@
-import { motion, Reorder, useAnimation } from "motion/react";
-import { FC, JSX, useEffect, useState } from "react";
+import { motion, useAnimation } from "motion/react";
+import { FC, JSX, useEffect } from "react";
 import { FaGithub, FaLinkedin, FaGoodreads } from "react-icons/fa";
 import { PROFILE_LINKS } from "../PORTFOLIO";
 import wait from "@/utils/wait";
+import openInNewTab from "@/utils/openInNewTab";
 
 interface PublicProfile {
   title: string;
@@ -15,7 +16,7 @@ interface ProfileLinkGroupItemProps extends PublicProfile {
 const iconMap: { [key: string]: JSX.Element } = {
   GitHub: <FaGithub size={'35'}/>,
   LinkedIn: <FaLinkedin size={'35'}/>,
-  Goodreads: <FaGoodreads size={'3s5'}/>
+  Goodreads: <FaGoodreads size={'35'}/>
 };
 
 const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) => {
@@ -42,46 +43,41 @@ const ProfileLinkGroupItem: FC<ProfileLinkGroupItemProps> = ({ index, title }) =
     return () => clearInterval(interval);
   }, [controls, index]);
 
-  const handleItemClick = (title: string) => {
-    const item = PROFILE_LINKS.find(item => item.title === title);
-    if (item) {
-      window.open(item.link, '_blank', 'noopener,noreferrer');
-    }
-  }
+  const profile = PROFILE_LINKS.find(item => item.title === title);
 
   return (
-    <Reorder.Item value={title} id={title}>
+    // The click lives on the <li>, not the <button>: whileTap's scale moves the icon out from
+    // under a held cursor, so mousedown and mouseup land on different elements and the browser
+    // dispatches `click` on their common ancestor. The <li> never transforms, so it always
+    // catches it — including the click a focused button synthesises for Enter/Space.
+    <li onClick={() => openInNewTab(profile?.link)}>
       <motion.div
-        className="bg-slate-900 text-white rounded cursor-grab active:cursor-grabbing select-none flex items-center gap-2 group"
+        className="bg-slate-900 text-white rounded select-none flex items-center gap-2 group"
         animate={controls}
         whileTap={{ scale: 0.95 }}
         whileHover={{ scale: 1.1 }}
-        title="Drag to reorder"
+        title={title}
       >
-        <span onClick={() => handleItemClick(title)}>
+        <button
+          aria-label={`Open my ${title} profile in a new tab`}
+          className="cursor-pointer"
+        >
           {iconMap[title]}
-        </span>
+        </button>
       </motion.div>
-    </Reorder.Item>
+    </li>
   );
 };
 
 ProfileLinkGroupItem.displayName = "ProfileLinkGroupItem";
 
 function PublicProfilesBar({items}: { items: PublicProfile[]}) {
-  const [tabs, setTabs] = useState(items.map(item => item.title));
-
   return (
-    <Reorder.Group 
-      axis="x" 
-      values={tabs} 
-      onReorder={setTabs}
-      className="flex flex-wrap gap-4"
-    >
-      {tabs.map((item, i) => (
-        <ProfileLinkGroupItem key={item} index={i} title={item} />
+    <ul className="flex flex-wrap gap-4">
+      {items.map((item, i) => (
+        <ProfileLinkGroupItem key={item.title} index={i} title={item.title} />
       ))}
-    </Reorder.Group>
+    </ul>
   );
 }
 

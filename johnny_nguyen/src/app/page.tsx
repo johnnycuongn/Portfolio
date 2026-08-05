@@ -1,16 +1,31 @@
 'use client'
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import PortfolioNavBar from "./_components/main_navigations";
 
 import { PORTFOLIO, PROFILE_LINKS, PROJECTS } from "./PORTFOLIO";
 
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useScroll, useTransform, useReducedMotion } from "motion/react";
 import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
 import ProjectCard from "./_components/ProjectCard";
 
+
+const heroStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } }
+};
+
+const heroStaggerDelayed = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.25 } }
+};
+
+const heroItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+};
 
 const MainSections = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -18,6 +33,7 @@ const MainSections = () => {
   const section2Ref = useRef<HTMLDivElement>(null);
   const section3Ref = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   const { scrollY } = useScroll();
 
@@ -36,20 +52,15 @@ const MainSections = () => {
   const text3Y = useTransform(scrollY, [containerHeight * 1.5, containerHeight * 2], [50, 0]);
 
 
-  const scrollToSection = (sectionNumber: number) => {
+  const scrollToSection = useCallback((sectionNumber: number) => {
     window.scrollTo({
       top: containerHeight * (sectionNumber - 1),
       behavior: 'smooth'
     });
-  };
+  }, [containerHeight]);
 
   useEffect(() => {
-    console.log('container current, ', containerRef.current, window.innerHeight);
-    if (!containerRef.current) return;
-    if (containerRef.current) {
-      setContainerHeight( window.innerHeight);
-    }
-    
+    setContainerHeight(window.innerHeight);
   }, []);
 
   useEffect(() => {
@@ -62,8 +73,6 @@ const MainSections = () => {
 
       timeoutId = setTimeout(() => {
         const scrollPosition = window.scrollY;
-        console.log('Scroll Position', scrollPosition);
-        console.log('Container Heihgt', containerHeight);
         const sectionNumber = Math.round(scrollPosition / containerHeight) + 1;
         scrollToSection(sectionNumber);
       }, 100); // Adjust this delay as needed
@@ -78,26 +87,38 @@ const MainSections = () => {
   }, [containerHeight, scrollToSection])
 
   return (
-    <div ref={containerRef} className="h-[300vh] w-max-screen items-center justify-center">
+    <div ref={containerRef} className="h-[300vh] w-full">
       
       <PortfolioNavBar />
       {/* Section 1 */}
       <div ref={section1Ref} className="fixed top-0 left-0 w-full h-screen grid grid-cols-1 md:grid-cols-5  md:items-center md:justify-center p-4 text-white z-10">
         <div className="col-span-2 flex flex-col h-full justify-center md:py-16">
-          <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
-            <h1 className="text-6xl pb-4">{PORTFOLIO.name}</h1>
-            <div className="text-xl pb-4">{PORTFOLIO.role}</div>
-            <PublicProfilesBar items={PROFILE_LINKS} />
+          <motion.div
+            style={{ opacity: text1Opacity, y: text1Y }}
+            variants={heroStagger}
+            initial={reduceMotion ? false : "hidden"}
+            animate="show"
+          >
+            <motion.h1 variants={heroItem} className="text-6xl tracking-tight pb-4">{PORTFOLIO.name}</motion.h1>
+            <motion.div variants={heroItem} className="text-xl pb-4">{PORTFOLIO.role}</motion.div>
+            <motion.div variants={heroItem}>
+              <PublicProfilesBar items={PROFILE_LINKS} />
+            </motion.div>
           </motion.div>
         </div>
-        <div className="md:col-span-3 flex flex-col f-full px-4">
-          <motion.div style={{ opacity: text1Opacity, y: text1Y }}>
-            <p className="text-md md:text-lg leading-8">{PORTFOLIO.description}</p>
-            <ul className="flex flex-wrap gap-4 text-xl mt-4">
+        <div className="md:col-span-3 flex flex-col px-4">
+          <motion.div
+            style={{ opacity: text1Opacity, y: text1Y }}
+            variants={heroStaggerDelayed}
+            initial={reduceMotion ? false : "hidden"}
+            animate="show"
+          >
+            <motion.p variants={heroItem} className="text-base md:text-lg leading-8">{PORTFOLIO.description}</motion.p>
+            <motion.ul variants={heroItem} className="flex flex-wrap gap-4 text-xl mt-4">
                 {PORTFOLIO.techs.map((tech) => (
                   <li key={tech} className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
                 ))}
-            </ul>
+            </motion.ul>
           </motion.div>
         </div>
       </div>
@@ -110,7 +131,7 @@ const MainSections = () => {
           <motion.div style={{ opacity: text2Opacity, y: text2Y }}
             className="h-full w-full flex flex-col justify-center"
           >
-            <span className="text-4xl py-4">Experience</span>
+            <h2 className="text-4xl tracking-tight py-4">Experience</h2>
             <div className="flex h-full w-full">
               <Timeline />
             </div>
@@ -128,7 +149,7 @@ const MainSections = () => {
             style={{ opacity: text3Opacity, y: text3Y }}
             className="h-full w-full flex flex-col justify-center"
           >
-            <span className="text-4xl py-4">Projects</span>
+            <h2 className="text-4xl tracking-tight py-4">Projects</h2>
             <div className="w-full h-full grid grid-flow-col grid-rows-2 md:grid-rows-4 gap-4">
                
               {/* Project 1 */}

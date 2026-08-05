@@ -1,5 +1,5 @@
 import { motion, useAnimation } from 'motion/react';
-import { FC, useEffect, useState, memo } from 'react';
+import { FC, memo } from 'react';
 import Image from 'next/image';
 import { FiExternalLink } from "react-icons/fi";
 import { PROJECTS } from '../PORTFOLIO';
@@ -15,7 +15,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
 
   const project = PROJECTS.find(project => project.id === projectId) ?? {
     id: '1',
-    title: 'Emtpy',
+    title: 'Empty',
     image: 'Empty',
     github: '',
     description: '',
@@ -24,11 +24,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
   const controls = useAnimation();
   const { navigating, navigate } = useDelayedLinkOpen(200)
 
-  const [isLastOdd, setIsLastOdd] = useState(false);
-
-  useEffect(() => {
-    setIsLastOdd(index === 2);
-  }, [])
+  const isLastOdd = index === 2;
 
   const handleProjectClicked = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -54,24 +50,28 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
   }
 
   return (
-    <motion.div 
-      whileHover={{ scale: 1.005 }}
-      transition={{ duration: 0.1 }}
+    <motion.div
+      whileHover={{ y: -4 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
       key={projectId}
-      className={(className ?? '') + ' bg-slate-800 md:p-3 md:m-4 rounded-lg shadow-lg max-h-200 '}>
-        <div 
+      className={(className ?? '') + ' bg-slate-800 md:p-3 md:m-4 rounded-lg shadow-lg hover:shadow-xl '}>
+        <div
           className={'overflow-auto relative flex flex-col h-full group/item ' + (isLastOdd ? '' : 'md:flex-row')}
-          onClick={handleProjectClicked}
         >
+          <a
+            href={project.github || 'https://github.com/johnnycuongn'}
+            onClick={handleProjectClicked}
+            className="absolute inset-0 z-10 cursor-pointer"
+            aria-label={`${project.title} on GitHub`}
+          ></a>
           <div className="relative flex-shrink-0 w-full md:w-1/2 h-48 md:h-full">
             <Image
               className="md:rounded-lg object-cover"
               src={project.image}
-              alt={`${project.title} image`}
-              layout="fill"
+              alt={`${project.title} preview`}
+              fill
+              sizes="(max-width: 768px) 100vw, 40vw"
               quality={90}
-              placeholder="blur" // Using a blur placeholder for better UX
-              blurDataURL={project.image} // Add a low-res image for blur effect
               priority={index === 0} // Prioritize the first project image for better LCP
             />
           </div>

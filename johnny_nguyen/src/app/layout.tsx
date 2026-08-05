@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Head from "next/head";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Duc Nguyen",
-  description: "Personal website of Duc Nguyen",
+  description:
+    "Portfolio of Duc (Johnny) Nguyen — software engineer specialising in React, TypeScript and .NET.",
 };
 
 export default function RootLayout({
@@ -26,12 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <Head>
-        <link rel="shortcut icon" href="/icon.png" />
-      </Head>
+    // suppressHydrationWarning: browser extensions inject attributes on <html> (e.g. data-google-analytics-opt-out)
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>

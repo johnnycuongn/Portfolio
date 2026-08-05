@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, useAnimation } from 'motion/react';
+import { motion, useAnimation, useReducedMotion } from 'motion/react';
 import useMousePosition from '@/utils/useMousePosition';
 
 interface TrailProps {
@@ -54,6 +54,7 @@ Trail.displayName = 'Trail';
 const MouseAndCat = () => {
   const mousePosition = useMousePosition();
   const controls = useAnimation();
+  const reduceMotion = useReducedMotion();
   const [dotPosition, setDotPosition] = useState({ x: 100, y: 100 });
 
   const runAway = useCallback(() => {
@@ -93,6 +94,8 @@ const MouseAndCat = () => {
     }
   }, [mousePosition, dotPosition, runAway]);
 
+  if (reduceMotion) return null;
+
   return (
     <motion.div
       style={{
@@ -100,7 +103,10 @@ const MouseAndCat = () => {
         height: 8,
         borderRadius: '50%',
         backgroundColor: '#fddba3',
-        position: 'absolute',
+        position: 'fixed', // roams every section, not just the hero viewport
+        top: 0,
+        left: 0,
+        pointerEvents: 'none',
         zIndex: 100
       }}
       animate={controls}

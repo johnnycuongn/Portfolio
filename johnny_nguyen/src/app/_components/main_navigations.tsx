@@ -1,7 +1,8 @@
-import React, { useState, useEffect, FC } from 'react';
-import { motion, Reorder, useAnimation } from 'motion/react';
+import React, { useState, useEffect, useRef, FC } from 'react';
+import { AnimatePresence, motion, useAnimation, useReducedMotion } from 'motion/react';
 import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
 import { PORTFOLIO } from '../PORTFOLIO';
+import openInNewTab from '@/utils/openInNewTab';
 
 interface TabItemProps {
   item: string;
@@ -9,8 +10,9 @@ interface TabItemProps {
 
 const TabItem: FC<TabItemProps> = ({ item }) => {
   const controls = useAnimation();
-  const [isContactClicked, setIsContactClicked] = useState(false)
-  const [isCopyClicked, setIsCopyClicked] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
 
   useEffect(() => {
     controls.start({ y: [0, -5, 0], transition: { duration: 0.5 } });
@@ -36,67 +38,137 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
     }
   }, [controls, item]);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (item === 'Resume') {
-      window.open(PORTFOLIO.resume_link, '_blank');
-    }
-    else if (item==='Contact') {
-      
-      navigator.clipboard.writeText('cuongdn2001@gmail.com');
-      if (isContactClicked) {
-        setIsCopyClicked(true)
-      }
-      else {
-        setIsCopyClicked(false)
-        setIsContactClicked(true)
-        setTimeout(() => {
-          setIsContactClicked(false)
-        }, 5000)
-      }
-      
-    }
+  const copyResetTimer = useRef<NodeJS.Timeout>(undefined);
+  const collapseTimer = useRef<NodeJS.Timeout>(undefined);
+
+  useEffect(() => () => {
+    clearTimeout(copyResetTimer.current);
+    clearTimeout(collapseTimer.current);
+  }, []);
+
+  const handleResumeClick = () => openInNewTab(PORTFOLIO.resume_link);
+
+  const handleContactClick = () => {
+    navigator.clipboard?.writeText(PORTFOLIO.email).catch(() => {});
+    setIsCopied(true)
+    clearTimeout(copyResetTimer.current);
+    copyResetTimer.current = setTimeout(() => setIsCopied(false), 3000)
   };
+
+  // Once revealed, the email sticks around after the cursor leaves so it stays
+  // readable and copyable without having to keep the pointer on the button.
+  const handleHoverStart = () => {
+    clearTimeout(collapseTimer.current);
+    setIsHovered(true)
+    setShowEmail(true)
+  };
+
+  const handleHoverEnd = () => {
+    setIsHovered(false)
+    clearTimeout(collapseTimer.current);
+    collapseTimer.current = setTimeout(() => setShowEmail(false), 10000)
+  };
+
+  const target = showEmail ? PORTFOLIO.email : item;
+  const [typed, setTyped] = useState(item);
+  const prefersReducedMotion = useReducedMotion();
+
+  // Typewriter: erase the old word a leading character at a time (so it wipes away
+  // left to right), then type the new one in against the nav's right edge.
+  useEffect(() => {
+    if (typed === target) return;
+    if (prefersReducedMotion) {
+      setTyped(target);
+      return;
+    }
+    const isTyping = target.startsWith(typed);
+    const tick = setTimeout(
+      () => setTyped(isTyping ? target.slice(0, typed.length + 1) : typed.slice(1)),
+      isTyping ? 14 : 18
+    );
+    return () => clearTimeout(tick);
+  }, [typed, target, prefersReducedMotion]);
+
+  const isAnimating = typed !== target;
+  const emailReady = showEmail && !isAnimating;
 
 
   return (
-    <Reorder.Item value={item} id={item}>
+    // The click lives on the <li>, not the <button>: whileTap's scale moves the DOM out from
+    // under a held cursor, so mousedown and mouseup land on different elements and the browser
+    // dispatches `click` on their common ancestor. The <li> never transforms, so it always
+    // catches it — including the click a focused button synthesises for Enter/Space.
+    <li onClick={item === 'Resume' ? handleResumeClick : handleContactClick}>
       <motion.div
-        className="bg-slate-900 text-white rounded px-4 py-2 cursor-grab active:cursor-grabbing select-none flex items-center gap-2 group"
+        className="bg-slate-900 text-white rounded select-none flex items-center group"
         whileHover={{ backgroundColor: "#4B5563" }}
         whileTap={{ scale: 0.95 }}
         animate={controls}
-        title="Drag to reorder navigation"
-        onClick={handleClick}
       >
-         {isContactClicked && item === 'Contact' ? (
-            <>
-            <span>Email me at cuongdn2001@gmail.com</span>
-            {isCopyClicked ? <TbCopyCheckFilled /> : <TbCopy />}
-            </>
+        {item === 'Resume' ? (
+          <button
+            title="Open my resume in a new tab"
+            className="px-4 py-2 cursor-pointer"
+          >
+            {item}
+          </button>
         ) : (
-          item
+          <motion.button
+            onHoverStart={handleHoverStart}
+            onHoverEnd={handleHoverEnd}
+            aria-label="Copy email address"
+            title="Click to copy my email"
+            className="px-4 py-2 cursor-pointer flex items-center gap-2 whitespace-nowrap"
+          >
+            {/* Grid stack: the invisible label keeps the button at least as wide as "Contact",
+                so erasing never shrinks it out from under the cursor and cancels the hover. */}
+            <span className="grid justify-items-end">
+              <span aria-hidden className="col-start-1 row-start-1 invisible">{item}</span>
+              <span className="col-start-1 row-start-1 flex items-center gap-[3px]">
+                {/* The whole address flashes teal on copy — a 16px icon swap alone is easy to miss. */}
+                <span className={`transition-colors duration-150 ${isCopied ? 'text-teal-300' : ''}`}>{typed}</span>
+                {(isHovered || isAnimating) && (
+                  <motion.span
+                    aria-hidden
+                    className="w-px h-[1.1em] bg-teal-300"
+                    animate={{ opacity: isAnimating ? 1 : [1, 0, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  />
+                )}
+              </span>
+            </span>
+            <AnimatePresence mode="popLayout" initial={false}>
+              {/* isCopied too: clicking mid-typing should still confirm, not wait for the icon to arrive */}
+              {(emailReady || isCopied) && (
+                <motion.span
+                  key={isCopied ? 'copied' : 'copy'}
+                  initial={{ opacity: 0, scale: 0.4 }}
+                  animate={{ opacity: 1, scale: isCopied ? [1.5, 1] : 1 }}
+                  exit={{ opacity: 0, scale: 0.4 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+                  className={isCopied ? 'text-teal-300' : 'text-gray-400'}
+                >
+                  {isCopied ? <TbCopyCheckFilled /> : <TbCopy />}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
         )}
       </motion.div>
-    </Reorder.Item>
+    </li>
   );
 };
 
-function PortfolioNavBar() {
-  const [items, setItems] = useState(['Resume', 'Contact']);
+const NAV_ITEMS = ['Resume', 'Contact'];
 
+function PortfolioNavBar() {
   return (
     <nav className="fixed top-0 right-0 p-2 z-50">
-      <Reorder.Group 
-        axis="x" 
-        values={items} 
-        onReorder={setItems}
-        className="flex flex-row gap-2"
-      >
-        {items.map((item) => (
+      <ul className="flex flex-row gap-2">
+        {NAV_ITEMS.map((item) => (
           <TabItem key={item} item={item} />
         ))}
-      </Reorder.Group>
+      </ul>
     </nav>
   );
 }

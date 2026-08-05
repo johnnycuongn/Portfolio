@@ -49,7 +49,7 @@ const TimelineItem: FC<JobTimeLineItem> = ({ year, title, company, content, link
             <FiExternalLink />
           </motion.span>
       </span>
-      <div className='mb-4 break-words transition-all flex-grow text-md text-gray-300 group-hover/item:text-white'>
+      <div className='mb-4 break-words transition-all flex-grow text-base text-gray-300 group-hover/item:text-white'>
         {content}
       </div>
       <div className='flex flex-wrap gap-1'>

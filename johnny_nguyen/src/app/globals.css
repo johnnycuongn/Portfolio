@@ -16,6 +16,10 @@
 
 body {
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #0f172a; /* slate-900, matches <main> — avoids white overscroll flash */
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: rgba(45, 212, 191, 0.3); /* teal-400/30 */
 }
