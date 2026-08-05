@@ -60,6 +60,11 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
           <a
             href={project.github || FALLBACK_LINK}
             onClick={handleProjectClicked}
+            onFocus={(e) => e.currentTarget.scrollIntoView({
+              behavior: reduceMotion ? 'auto' : 'smooth',
+              inline: 'nearest',
+              block: 'nearest'
+            })}
             className="absolute inset-0 z-10 cursor-pointer"
             aria-label={`${project.title} on GitHub`}
           ></a>
