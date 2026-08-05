@@ -40,8 +40,14 @@ export default function useChat(): UseChat {
   useEffect(() => {
     messagesRef.current = messages;
     if (!hydrated.current) return;
+    // Skip writes while a reply is still streaming in — saving on every token
+    // would leave a truncated mid-sentence reply in storage if the tab closes
+    // mid-stream. `send`'s `finally` flips `isStreaming` back to false once the
+    // turn is settled (success, offline, or fallback), which re-fires this
+    // effect with the completed messages and persists them.
+    if (isStreaming) return;
     saveChat(storageRef.current, messages);
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   const send = useCallback(
     async (text: string) => {
@@ -91,19 +97,26 @@ export default function useChat(): UseChat {
           }
         };
 
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) consume(line);
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+            for (const line of lines) consume(line);
+          }
+          if (buffer.trim()) consume(buffer);
+        } finally {
+          reader.releaseLock();
         }
-        if (buffer.trim()) consume(buffer);
 
         if (!reply) patchReply({ text: OFFLINE_MESSAGE, fallback: true });
-      } catch {
-        // The route never errors by design, so this is a genuinely offline client.
+      } catch (err) {
+        // The route never errors by design, so this is a genuinely offline client
+        // (or a stream-parsing bug) — logged for diagnosis, but the visitor still
+        // only ever sees the friendly offline message, never a raw error state.
+        console.error('useChat: send failed', err);
         patchReply({ text: OFFLINE_MESSAGE, fallback: true });
       } finally {
         setIsStreaming(false);
