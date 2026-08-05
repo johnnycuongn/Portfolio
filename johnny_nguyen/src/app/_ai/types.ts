@@ -1,3 +1,8 @@
+/** Per-message character cap, enforced identically on client and server so they cannot drift. */
+export const MAX_MESSAGE_CHARS = 500;
+/** How many trailing messages of history are kept/sent, enforced identically on client and server. */
+export const MAX_HISTORY = 8;
+
 export type ChatRole = 'user' | 'firefly';
 
 export interface ChatAction {

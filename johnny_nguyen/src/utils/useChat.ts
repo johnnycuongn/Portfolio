@@ -1,19 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChatMessage } from '../app/_ai/types';
+import { MAX_HISTORY, MAX_MESSAGE_CHARS, type ChatMessage } from '../app/_ai/types';
+import { CHAT } from '../app/PORTFOLIO';
 import { clearChat, getBrowserStorage, loadChat, saveChat, type StorageLike } from './chatStorage';
-
-const MAX_MESSAGE_CHARS = 500;
-const OFFLINE_MESSAGE =
-  "Can't reach my brain from here. Johnny's inbox always works though — cuongdn2001@gmail.com.";
 
 export interface UseChat {
   messages: ChatMessage[];
   isStreaming: boolean;
   /** True once a restored or in-session conversation exists, so the greeting and chips step aside. */
   hasHistory: boolean;
-  send(text: string): Promise<void>;
+  /** Returns false (and does nothing) if the message was rejected — empty, or already streaming. */
+  send(text: string): boolean;
   clear(): void;
 }
 
@@ -49,11 +47,11 @@ export default function useChat(): UseChat {
     saveChat(storageRef.current, messages);
   }, [messages, isStreaming]);
 
-  const send = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim().slice(0, MAX_MESSAGE_CHARS);
-      if (!trimmed || isStreaming) return;
-
+  // The async work that follows an accepted message. Split out from `send` so
+  // `send` itself can stay synchronous and report acceptance immediately —
+  // the caller needs that to know whether it's safe to clear the draft.
+  const sendAccepted = useCallback(
+    async (trimmed: string) => {
       const userMessage: ChatMessage = { id: newId(), role: 'user', text: trimmed };
       const replyId = newId();
 
@@ -72,7 +70,7 @@ export default function useChat(): UseChat {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ messages: history.slice(-8) }),
+          body: JSON.stringify({ messages: history.slice(-MAX_HISTORY) }),
         });
         if (!response.body) throw new Error('no stream');
 
@@ -111,18 +109,32 @@ export default function useChat(): UseChat {
           reader.releaseLock();
         }
 
-        if (!reply) patchReply({ text: OFFLINE_MESSAGE, fallback: true });
+        if (!reply) patchReply({ text: CHAT.offlineMessage, fallback: true });
       } catch (err) {
         // The route never errors by design, so this is a genuinely offline client
         // (or a stream-parsing bug) — logged for diagnosis, but the visitor still
         // only ever sees the friendly offline message, never a raw error state.
         console.error('useChat: send failed', err);
-        patchReply({ text: OFFLINE_MESSAGE, fallback: true });
+        patchReply({ text: CHAT.offlineMessage, fallback: true });
       } finally {
         setIsStreaming(false);
       }
     },
-    [isStreaming],
+    [],
+  );
+
+  // Synchronous gate: validates and, if accepted, kicks off `sendAccepted`
+  // without awaiting it. The boolean return lets the caller know immediately
+  // whether it's safe to clear a draft — a message typed mid-stream is
+  // rejected here rather than silently discarded.
+  const send = useCallback(
+    (text: string): boolean => {
+      const trimmed = text.trim().slice(0, MAX_MESSAGE_CHARS);
+      if (!trimmed || isStreaming) return false;
+      void sendAccepted(trimmed);
+      return true;
+    },
+    [isStreaming, sendAccepted],
   );
 
   const clear = useCallback(() => {

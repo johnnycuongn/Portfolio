@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { buildSystemPrompt, extractKnowledgeProse } from '../src/app/_ai/knowledge';
+import fs from 'node:fs';
+import path from 'node:path';
+import { buildSystemPrompt, composeSystemPrompt, extractKnowledgeProse } from '../src/app/_ai/knowledge';
 import { PORTFOLIO, TimelineData, PROJECTS } from '../src/app/PORTFOLIO';
 
 const prompt = buildSystemPrompt();
@@ -63,12 +65,44 @@ assert.ok(
 );
 assert.ok(proseResult.includes('# About Johnny'), 'headings should survive alongside prose');
 
-// The knowledge file on disk right now is headings-only (Johnny hasn't
-// written the prose yet), so the real prompt must not carry an empty
-// "More about Johnny" section for it.
+// End-to-end prose path: exercise the composition logic directly (never
+// touching about-johnny.md on disk) and confirm the extracted prose actually
+// lands in the assembled prompt, section header and all.
+const composedWithProse = composeSystemPrompt(proseResult);
 assert.ok(
-  !prompt.includes('More about Johnny'),
-  'headings-only about-johnny.md should not add an empty section to the prompt',
+  composedWithProse.includes('More about Johnny'),
+  'prose-bearing content should add the "More about Johnny" section',
 );
+assert.ok(
+  composedWithProse.includes('He grew up building things and never really stopped.'),
+  'prose-bearing content should appear verbatim in the composed prompt',
+);
+
+// A headings-only knowledge file composes with no section at all.
+const composedWithoutProse = composeSystemPrompt('');
+assert.ok(
+  !composedWithoutProse.includes('More about Johnny'),
+  'empty about-section should not add the "More about Johnny" section',
+);
+
+// Correspondence check against the real file on disk, rather than a constant
+// that only happens to hold while the file is headings-only scaffold: the
+// "More about Johnny" section must appear in the real prompt if and only if
+// the real file actually has prose. This passes today (headings-only) and
+// will keep passing the moment Johnny writes real content.
+const aboutPath = path.join(process.cwd(), 'src/app/_ai/about-johnny.md');
+const aboutRaw = fs.readFileSync(aboutPath, 'utf8');
+const aboutProse = extractKnowledgeProse(aboutRaw);
+if (aboutProse) {
+  assert.ok(
+    prompt.includes('More about Johnny'),
+    'about-johnny.md has prose, so the prompt should include the "More about Johnny" section',
+  );
+} else {
+  assert.ok(
+    !prompt.includes('More about Johnny'),
+    'about-johnny.md is headings-only, so the prompt should not include an empty "More about Johnny" section',
+  );
+}
 
 console.log('check-knowledge: ok');

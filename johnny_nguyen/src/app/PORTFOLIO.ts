@@ -22,9 +22,11 @@ const PROFILE_LINKS = [
   }
 ]
 
+const CHAT_NAME = 'Firefly';
+
 const CHAT = {
   /** The firefly hosts the chat. It talks about Johnny, never as Johnny. */
-  name: 'Firefly',
+  name: CHAT_NAME,
   greeting: "Hi — I hang around this page. Ask me anything about Johnny.",
   chips: [
     { label: "What's he working on?", question: "What is Johnny working on right now?" },
@@ -34,6 +36,14 @@ const CHAT = {
   placeholder: 'Ask about Johnny…',
   privacyNote: 'This chat stays in your browser.',
   clearLabel: 'Clear',
+  /** Shown client-side when the request never made it back at all (offline, parse failure). */
+  offlineMessage: `Can't reach my brain from here. Johnny's inbox always works though — ${PORTFOLIO.email}.`,
+  /** Beacon aria-label when the panel is closed. */
+  openLabel: `Ask ${CHAT_NAME} about Johnny`,
+  /** Beacon and panel-header aria-label when the panel is open. */
+  closeLabel: 'Close chat',
+  /** Dialog aria-label for the panel itself. */
+  dialogLabel: `Chat with ${CHAT_NAME}`,
 };
 
 interface JobTimeLineItem {

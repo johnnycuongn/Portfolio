@@ -1,14 +1,16 @@
 import { matchFallback } from '../../_ai/fallback';
 import { limiter } from '../../_ai/limits';
 import { isProviderConfigured, streamCompletion } from '../../_ai/provider';
-import type { ChatMessage } from '../../_ai/types';
+import { MAX_HISTORY, MAX_MESSAGE_CHARS, type ChatMessage } from '../../_ai/types';
 
 // fs is used by the knowledge module in a later task, and Node is required for it.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Vercel's default Node function timeout can be shorter than PROVIDER_TIMEOUT_MS below;
+// without this, the platform can kill the function before our own timeout fires, handing
+// the visitor a dead stream instead of the canned answer this route exists to guarantee.
+export const maxDuration = 30;
 
-const MAX_MESSAGE_CHARS = 500;
-const MAX_HISTORY = 8;
 const PROVIDER_TIMEOUT_MS = 15_000;
 
 const NDJSON_HEADERS = {
@@ -81,9 +83,12 @@ function modelResponse(history: ChatMessage[], question: string): Response {
           // visitor-facing outcome as a failure before the first token.
           sendFallback('');
         }
-      } catch {
+      } catch (err) {
         // Mid-sentence failures keep the partial answer and hand off; failures
-        // before any token just deliver the canned answer on its own.
+        // before any token just deliver the canned answer on its own. The
+        // visitor's experience never changes here — this is operator-facing
+        // only, so a bad key/model/quota is diagnosable from Vercel logs.
+        console.error('api/chat: provider stream failed', err);
         sendFallback(produced ? ' …lost my thread there. ' : '');
       } finally {
         clearTimeout(timeout);
@@ -121,6 +126,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const verdict = limiter.check(clientIp(request));
   if (!verdict.allowed) {
+    // Operator-facing only — the visitor still gets the same canned answer
+    // either way, but the cap that fired is otherwise invisible in the logs.
+    console.error('api/chat: rate limited', verdict.reason);
     return fallbackResponse(question);
   }
 

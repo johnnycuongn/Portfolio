@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { CHAT } from '../PORTFOLIO';
+import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useChat from '@/utils/useChat';
 
 const GLOW = 'radial-gradient(circle, rgba(230,255,150,1) 0%, rgba(230,255,150,0.8) 25%, rgba(230,255,150,0.4) 50%, rgba(230,255,150,0) 75%)';
@@ -42,20 +43,29 @@ export default function FireflyChat() {
   // stops the initial render from stealing focus on page load.
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (open) inputRef.current?.focus({ preventScroll: true });
     else if (wasOpen.current) beaconRef.current?.focus({ preventScroll: true });
     wasOpen.current = open;
   }, [open]);
 
-  // Smooth-scroll only for a settled reply; mid-stream (one update per token) and
-  // reduced-motion both fall back to an instant jump so the list stays pinned to
-  // the bottom without stacking overlapping scroll animations.
+  // Land at the bottom the moment the panel opens (an instant jump, not a smooth
+  // scroll from the top over a restored transcript), then keep pinned to the
+  // bottom as new messages arrive. Smooth-scroll only for a settled reply while
+  // already open; mid-stream (one update per token) and reduced-motion both fall
+  // back to an instant jump so the list never stacks overlapping animations.
+  const scrolledSinceOpen = useRef(false);
   useEffect(() => {
+    if (!open) {
+      scrolledSinceOpen.current = false;
+      return;
+    }
+    const instant = reduceMotion || isStreaming || !scrolledSinceOpen.current;
     listEndRef.current?.scrollIntoView({
-      behavior: reduceMotion || isStreaming ? 'auto' : 'smooth',
+      behavior: instant ? 'auto' : 'smooth',
       block: 'end',
     });
-  }, [messages, isStreaming, reduceMotion]);
+    scrolledSinceOpen.current = true;
+  }, [messages, isStreaming, reduceMotion, open]);
 
   // Esc closes. Tab cycles within the panel rather than escaping to the page.
   const onPanelKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -81,10 +91,13 @@ export default function FireflyChat() {
     }
   }, []);
 
+  // The draft is only cleared once `send` reports the message was actually
+  // accepted — typing a follow-up mid-stream is rejected (and the disabled
+  // input/chips below make that the normal, visible case) rather than
+  // silently wiping what was typed.
   const submit = useCallback(
     (text: string) => {
-      setDraft('');
-      void send(text);
+      if (send(text)) setDraft('');
     },
     [send],
   );
@@ -94,7 +107,7 @@ export default function FireflyChat() {
       <motion.button
         ref={beaconRef}
         type="button"
-        aria-label={open ? 'Close chat' : `Ask ${CHAT.name} about Johnny`}
+        aria-label={open ? CHAT.closeLabel : CHAT.openLabel}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-6 right-6 z-[200] flex h-11 w-11 items-center justify-center rounded-full"
@@ -112,14 +125,14 @@ export default function FireflyChat() {
           <motion.div
             ref={panelRef}
             role="dialog"
-            aria-label={`Chat with ${CHAT.name}`}
+            aria-label={CHAT.dialogLabel}
             onKeyDown={onPanelKeyDown}
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 20 }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             style={{ transformOrigin: 'bottom right', boxShadow: '0 0 40px rgba(230,255,150,0.08)' }}
-            className="fixed inset-x-0 bottom-0 z-[200] flex h-[85vh] flex-col rounded-t-2xl bg-slate-800 text-white sm:inset-x-auto sm:bottom-20 sm:right-6 sm:h-[480px] sm:w-[360px] sm:rounded-2xl"
+            className="fixed inset-x-0 bottom-0 z-[200] flex h-[85dvh] flex-col rounded-t-2xl bg-slate-800 text-white sm:inset-x-auto sm:bottom-20 sm:right-6 sm:h-[480px] sm:w-[360px] sm:rounded-2xl"
           >
             <header className="flex shrink-0 items-center gap-2 px-4 py-3">
               <FireflyDot size={8} fast={isStreaming} />
@@ -137,7 +150,7 @@ export default function FireflyChat() {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Close chat"
+                  aria-label={CHAT.closeLabel}
                   className="text-gray-400 transition-colors hover:text-teal-300"
                 >
                   ✕
@@ -159,7 +172,8 @@ export default function FireflyChat() {
                         <button
                           type="button"
                           onClick={() => submit(chip.question)}
-                          className="rounded-full bg-teal-400/10 px-3 py-1 text-xs leading-5 text-teal-300 transition-colors hover:bg-teal-400/20"
+                          disabled={isStreaming}
+                          className="rounded-full bg-teal-400/10 px-3 py-1 text-xs leading-5 text-teal-300 transition-colors hover:bg-teal-400/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-teal-400/10"
                         >
                           {chip.label}
                         </button>
@@ -211,11 +225,12 @@ export default function FireflyChat() {
               <input
                 ref={inputRef}
                 value={draft}
-                maxLength={500}
+                maxLength={MAX_MESSAGE_CHARS}
+                disabled={isStreaming}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder={CHAT.placeholder}
                 aria-label={CHAT.placeholder}
-                className="w-full rounded-full bg-slate-900 px-4 py-2 text-sm text-white outline-none placeholder:text-gray-500 focus:ring-1 focus:ring-teal-400/40"
+                className="w-full rounded-full bg-slate-900 px-4 py-2 text-sm text-white outline-none placeholder:text-gray-500 focus:ring-1 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <p className="mt-2 text-center text-[10px] text-gray-500">{CHAT.privacyNote}</p>
             </form>

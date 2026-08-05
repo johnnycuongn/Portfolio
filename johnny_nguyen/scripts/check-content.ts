@@ -12,5 +12,10 @@ for (const chip of CHAT.chips) {
 assert.ok(CHAT.placeholder.length > 0);
 assert.ok(CHAT.privacyNote.length > 0);
 assert.ok(CHAT.clearLabel.length > 0);
+assert.ok(CHAT.offlineMessage.length > 0, 'offline message must not be empty');
+assert.ok(CHAT.offlineMessage.includes('@'), 'offline message should carry a real email, not a placeholder');
+assert.ok(CHAT.openLabel.length > 0, 'beacon open aria-label must not be empty');
+assert.ok(CHAT.closeLabel.length > 0, 'close aria-label must not be empty');
+assert.ok(CHAT.dialogLabel.length > 0, 'panel dialog aria-label must not be empty');
 
 console.log('check-content: ok');
