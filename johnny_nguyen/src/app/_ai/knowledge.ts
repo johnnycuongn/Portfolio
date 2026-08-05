@@ -27,11 +27,26 @@ export function portfolioFacts(): string {
   ].join('\n');
 }
 
+/**
+ * Strips HTML comments from raw markdown and decides whether what's left is
+ * actual prose, as opposed to only headings and blank lines (an unfilled
+ * scaffold). A heading-only file returns '' — same as an absent file — so an
+ * empty "More about Johnny" section never gets injected into the prompt.
+ * A file with any real prose is returned in full, headings included.
+ */
+export function extractKnowledgeProse(raw: string): string {
+  const content = raw.replace(/<!--[\s\S]*?-->/g, '').trim();
+  const hasProse = content
+    .split('\n')
+    .some((line) => line.trim() !== '' && !line.trim().startsWith('#'));
+  return hasProse ? content : '';
+}
+
 /** Read once at cold start. An absent file is not an error — it just means less colour. */
 function readAboutFile(): string {
   try {
     const filePath = path.join(process.cwd(), 'src/app/_ai/about-johnny.md');
-    return fs.readFileSync(filePath, 'utf8').replace(/<!--[\s\S]*?-->/g, '').trim();
+    return extractKnowledgeProse(fs.readFileSync(filePath, 'utf8'));
   } catch {
     return '';
   }
