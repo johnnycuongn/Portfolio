@@ -1620,15 +1620,12 @@ function modelResponse(history: ChatMessage[], question: string): Response {
         }
         write({ type: 'done', fallback: false, action: null });
       } catch {
-        if (produced) {
-          const answer = matchFallback(question);
-          write({ type: 'token', text: ' …lost my thread there. ' + answer.answer });
-          write({ type: 'done', fallback: true, action: answer.action ?? null });
-        } else {
-          const answer = matchFallback(question);
-          write({ type: 'token', text: answer.answer });
-          write({ type: 'done', fallback: true, action: answer.action ?? null });
-        }
+        // Mid-sentence failures keep the partial answer and hand off; failures
+        // before any token just deliver the canned answer on its own.
+        const answer = matchFallback(question);
+        const handoff = produced ? ' …lost my thread there. ' : '';
+        write({ type: 'token', text: handoff + answer.answer });
+        write({ type: 'done', fallback: true, action: answer.action ?? null });
       } finally {
         clearTimeout(timeout);
         controller.close();
