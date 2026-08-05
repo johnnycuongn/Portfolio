@@ -137,7 +137,7 @@ If you're changing more than content, the conventions worth keeping:
 
 ## Deploying
 
-Pushing to the connected branch deploys via Vercel. Nothing else is needed — there are no environment variables or backing services.
+Pushing to the connected branch deploys via Vercel. No environment variables are required — the site runs fine with none set, including the chat (see below) — but `GROQ_API_KEY`/`GROQ_MODEL` can optionally be set in the Vercel project settings to enable live model answers.
 
 ## Chat (Firefly)
 

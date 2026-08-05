@@ -11,12 +11,14 @@ const MAX_MESSAGE_CHARS = 500;
 const MAX_HISTORY = 8;
 const PROVIDER_TIMEOUT_MS = 15_000;
 
+const NDJSON_HEADERS = {
+  'content-type': 'application/x-ndjson; charset=utf-8',
+  'cache-control': 'no-store',
+};
+
 function ndjson(lines: object[]): Response {
   const body = lines.map((line) => JSON.stringify(line)).join('\n') + '\n';
-  return new Response(body, {
-    status: 200,
-    headers: { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' },
-  });
+  return new Response(body, { status: 200, headers: NDJSON_HEADERS });
 }
 
 function fallbackResponse(question: string): Response {
@@ -35,7 +37,10 @@ function clientIp(request: Request): string {
 /**
  * Streams the model's reply as NDJSON. If the provider fails before producing
  * any text, the caller falls back. If it dies mid-sentence, keep what we have
- * and append a pointer rather than discarding a half-written answer.
+ * and append a pointer rather than discarding a half-written answer. A stream
+ * that ends "successfully" without ever yielding text is treated the same as
+ * a failure — an empty bubble is exactly the kind of visible break this route
+ * exists to avoid.
  */
 function modelResponse(history: ChatMessage[], question: string): Response {
   const encoder = new TextEncoder();
@@ -44,34 +49,54 @@ function modelResponse(history: ChatMessage[], question: string): Response {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const write = (event: object) =>
-        controller.enqueue(encoder.encode(JSON.stringify(event) + '\n'));
+      // A client disconnect mid-stream can leave the controller already
+      // closed/errored; enqueue/close would then throw synchronously. That's
+      // just the visitor going away, not a server error, so swallow it here
+      // rather than let it escape as an unhandled rejection.
+      const write = (event: object) => {
+        try {
+          controller.enqueue(encoder.encode(JSON.stringify(event) + '\n'));
+        } catch {
+          // Controller already closed/errored — nothing left to write to.
+        }
+      };
       let produced = false;
+
+      const sendFallback = (handoff: string) => {
+        const answer = matchFallback(question);
+        write({ type: 'token', text: handoff + answer.answer });
+        write({ type: 'done', fallback: true, action: answer.action ?? null });
+      };
 
       try {
         for await (const text of streamCompletion(history, controllerAbort.signal)) {
+          if (!text) continue;
           produced = true;
           write({ type: 'token', text });
         }
-        write({ type: 'done', fallback: false, action: null });
+        if (produced) {
+          write({ type: 'done', fallback: false, action: null });
+        } else {
+          // Finished without error but never yielded any text — same
+          // visitor-facing outcome as a failure before the first token.
+          sendFallback('');
+        }
       } catch {
         // Mid-sentence failures keep the partial answer and hand off; failures
         // before any token just deliver the canned answer on its own.
-        const answer = matchFallback(question);
-        const handoff = produced ? ' …lost my thread there. ' : '';
-        write({ type: 'token', text: handoff + answer.answer });
-        write({ type: 'done', fallback: true, action: answer.action ?? null });
+        sendFallback(produced ? ' …lost my thread there. ' : '');
       } finally {
         clearTimeout(timeout);
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // Already closed/errored (e.g. client disconnected) — fine to ignore.
+        }
       }
     },
   });
 
-  return new Response(stream, {
-    status: 200,
-    headers: { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' },
-  });
+  return new Response(stream, { status: 200, headers: NDJSON_HEADERS });
 }
 
 export async function POST(request: Request): Promise<Response> {
