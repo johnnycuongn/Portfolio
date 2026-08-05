@@ -36,6 +36,26 @@ const ProjectRail = () => {
     return () => window.removeEventListener('resize', sync);
   }, [sync]);
 
+  // Chrome redirects vertical wheel deltas into horizontally-scrollable
+  // containers, and this rail's `overscroll-behavior-x: contain` then stops
+  // them chaining onward — so a vertical gesture over the rail gets swallowed
+  // and never reaches the page's section-snap handler. Forward vertical
+  // intent to the window explicitly; horizontal intent falls through to the
+  // scroller untouched.
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      window.scrollBy({ top: e.deltaY });
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
   const scrollByCard = (direction: number) => {
     const el = railRef.current;
     if (!el) return;
