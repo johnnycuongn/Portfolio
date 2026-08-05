@@ -1,77 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
 import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 import { PROJECTS } from '../PORTFOLIO';
 import ProjectCard from './ProjectCard';
-import './ProjectRail.css';
+import useRail from '@/utils/useRail';
+import './Rail.css';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const ProjectRail = () => {
-  const railRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
-
-  // `visible` is the fraction of the content in frame — it becomes the
-  // progress thumb's width, so the bar reads as a real scrollbar.
-  const [visible, setVisible] = useState(1);
-  const [ratio, setRatio] = useState(0);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(true);
-
-  const sync = useCallback(() => {
-    const el = railRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setVisible(el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1);
-    setRatio(max > 0 ? el.scrollLeft / max : 0);
-    setAtStart(el.scrollLeft <= 1);
-    setAtEnd(el.scrollLeft >= max - 1);
-  }, []);
-
-  useEffect(() => {
-    sync();
-    window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
-  }, [sync]);
-
-  // Chrome redirects vertical wheel deltas into horizontally-scrollable
-  // containers, and this rail's `overscroll-behavior-x: contain` then stops
-  // them chaining onward — so a vertical gesture over the rail gets swallowed
-  // and never reaches the page's section-snap handler. Forward vertical
-  // intent to the window explicitly; horizontal intent falls through to the
-  // scroller untouched.
-  useEffect(() => {
-    const el = railRef.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      e.preventDefault();
-      // deltaY is only in pixels when deltaMode is DOM_DELTA_PIXEL. Firefox
-      // reports DOM_DELTA_LINE for physical mouse wheels; forwarding the raw
-      // value there would scroll ~19x too little and the page's debounced snap
-      // would pull it straight back.
-      const factor = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
-      window.scrollBy({ top: e.deltaY * factor });
-    };
-
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
-
-  const scrollByCard = (direction: number) => {
-    const el = railRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>('[data-rail-card]');
-    const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
-    const step = (card?.offsetWidth ?? el.clientWidth) + gap;
-    el.scrollBy({
-      left: direction * step,
-      behavior: reduceMotion ? 'auto' : 'smooth'
-    });
-  };
+  const { railRef, visible, ratio, atStart, atEnd, sync, scrollByCard } = useRail();
 
   const index = Math.round(ratio * (PROJECTS.length - 1)) + 1;
 
@@ -119,9 +57,9 @@ const ProjectRail = () => {
         </div>
         {/*
           A plain mouse wheel only emits deltaY, and every wheel event over the
-          rail is now forwarded to the page (see the wheel handler above) — so a
-          desktop user without a trackpad has no wheel-driven way to scroll the
-          rail. These arrows (and arrow-key scrolling) are their only means;
+          rail is forwarded to the page (see the wheel handler in useRail) — so
+          a desktop user without a trackpad has no wheel-driven way to scroll
+          the rail. These arrows (and arrow-key scrolling) are their only means;
           treat this block as functionally load-bearing, not decorative.
         */}
         <div className="hidden gap-2 [@media(pointer:fine)]:flex">
