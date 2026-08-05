@@ -3,13 +3,13 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import PortfolioNavBar from "./_components/main_navigations";
 
-import { PORTFOLIO, PROFILE_LINKS, PROJECTS } from "./PORTFOLIO";
+import { PORTFOLIO, PROFILE_LINKS } from "./PORTFOLIO";
 
 import { motion, useScroll, useTransform, useReducedMotion } from "motion/react";
 import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
-import ProjectCard from "./_components/ProjectCard";
+import ProjectRail from "./_components/ProjectRail";
 
 
 const heroStagger = {
@@ -149,22 +149,9 @@ const MainSections = () => {
             style={{ opacity: text3Opacity, y: text3Y }}
             className="h-full w-full flex flex-col justify-center"
           >
-            <h2 className="text-4xl tracking-tight py-4">Projects</h2>
-            <div className="w-full h-full grid grid-flow-col grid-rows-2 md:grid-rows-4 gap-4">
-               
-              {/* Project 1 */}
-              <ProjectCard index={0} projectId={PROJECTS[0].id} 
-                className="md:col-span-2 md:row-span-2"
-              />
-              {/* Project 2 */}
-              <ProjectCard index={1} projectId={PROJECTS[1].id}
-                className="md:col-span-2 md:row-span-2"
-              />
-              {/* Project 3
-              <ProjectCard index={2} projectId={PROJECTS[2].id}
-                className="md:row-span-4"
-              /> */}
-
+            <h2 className="text-4xl tracking-tight shrink-0 py-4">Projects</h2>
+            <div className="min-h-0 flex-1">
+              <ProjectRail />
             </div>
 
           </motion.div>

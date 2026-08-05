@@ -1,0 +1,27 @@
+/* Hide the native scrollbar; the teal progress bar below the rail replaces it. */
+.rail-scroller {
+  scrollbar-width: none;
+}
+
+.rail-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Card width is derived, not tuned. We want two full cards plus one third of a
+ * third card in frame:
+ *
+ *   2⅓ cards + 2 gaps = 100%   ->   basis = (100% - 2 * gap) / 2.333
+ *
+ * The 3rem below is 2 * the 1.5rem (gap-6) used on the scroller at md+.
+ * If the gap changes, change this with it.
+ */
+.rail-card {
+  flex: 0 0 85%;
+}
+
+@media (min-width: 768px) {
+  .rail-card {
+    flex: 0 0 calc((100% - 3rem) / 2.333);
+  }
+}
