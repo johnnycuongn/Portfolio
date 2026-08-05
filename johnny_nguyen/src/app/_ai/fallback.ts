@@ -24,12 +24,15 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
   {
     id: 'who',
     triggers: ['who', 'about him', 'about johnny', 'introduce', 'himself'],
-    answer: `Johnny's a ${PORTFOLIO.role.toLowerCase()} — ${PORTFOLIO.description.toLowerCase()}. He's been building things professionally since 2022, mostly across the stack. What would you like to know?`,
+    // Deliberately not interpolating PORTFOLIO.description: that is hero copy
+    // written to be read, and it lands as marketing when spoken aloud by the
+    // firefly. Role and stack still come from the data, so this cannot drift.
+    answer: `Johnny's a ${PORTFOLIO.role.toLowerCase()} — mostly ${PORTFOLIO.techs.slice(0, 3).join(', ')}, across the stack. He's been building things professionally since 2022. What would you like to know?`,
   },
   {
     id: 'now',
     triggers: ['now', 'currently', 'current', 'imsx', 'these days', 'working on', 'latest'],
-    answer: `He's at ${current.company} as a ${current.title.toLowerCase()} — enterprise systems, invoicing and auditing workflows, plus the AWS side and the deploy pipelines. Want the detail on any of it?`,
+    answer: `He's at ${current.company} as a ${current.title.toLowerCase()} — enterprise systems across finance, advertising compliance, NDIS and insurance, owned end to end. I can go into any of it.`,
     action: { label: current.company, href: current.link },
   },
   {

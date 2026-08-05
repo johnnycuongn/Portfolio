@@ -34,6 +34,26 @@ export default function FireflyChat() {
   const { messages, isStreaming, hasHistory, send, clear } = useChat();
   const reduceMotion = useReducedMotion();
 
+  // The Experience section is the page's second full-viewport act. `page.tsx`
+  // decides the active section by rounding scrollY against the viewport height;
+  // matching that maths here keeps the hint in step with the snap without
+  // reaching into its refs or its scroll machinery.
+  const [inExperience, setInExperience] = useState(false);
+  useEffect(() => {
+    const read = () => {
+      const viewport = window.innerHeight;
+      if (!viewport) return;
+      setInExperience(Math.round(window.scrollY / viewport) === 1);
+    };
+    read();
+    window.addEventListener('scroll', read, { passive: true });
+    window.addEventListener('resize', read);
+    return () => {
+      window.removeEventListener('scroll', read);
+      window.removeEventListener('resize', read);
+    };
+  }, []);
+
   const panelRef = useRef<HTMLDivElement>(null);
   const beaconRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -104,6 +124,23 @@ export default function FireflyChat() {
 
   return (
     <>
+      {/* Decorative reinforcement of the beacon's own aria-label, so it is
+          aria-hidden rather than announced twice. */}
+      <AnimatePresence>
+        {inExperience && !open && (
+          <motion.span
+            aria-hidden
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="pointer-events-none fixed bottom-6 right-[4.75rem] z-[200] flex h-11 items-center whitespace-nowrap text-xs text-gray-400"
+          >
+            {CHAT.hintLabel}
+          </motion.span>
+        )}
+      </AnimatePresence>
+
       <motion.button
         ref={beaconRef}
         type="button"

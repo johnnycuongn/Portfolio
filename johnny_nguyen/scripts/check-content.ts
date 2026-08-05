@@ -17,5 +17,7 @@ assert.ok(CHAT.offlineMessage.includes('@'), 'offline message should carry a rea
 assert.ok(CHAT.openLabel.length > 0, 'beacon open aria-label must not be empty');
 assert.ok(CHAT.closeLabel.length > 0, 'close aria-label must not be empty');
 assert.ok(CHAT.dialogLabel.length > 0, 'panel dialog aria-label must not be empty');
+assert.ok(CHAT.hintLabel.length > 0, 'beacon hint label must not be empty');
+assert.ok(CHAT.hintLabel.length < 20, 'beacon hint sits beside the firefly — it has to stay short');
 
 console.log('check-content: ok');

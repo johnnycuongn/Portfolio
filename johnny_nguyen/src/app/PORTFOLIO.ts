@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 const PORTFOLIO = {
   name: "Duc (Johnny) Nguyen",
   role: "Software Engineer",
-  description: "A product-focused software engineer",
+  description: "A product-focused software engineer, passionate about building scalable and efficient software solutions. Experienced in full-stack development, cloud computing, and database management.",
   techs: ["Typescript", "AWS", "Node.js", ".NET Core", "PostgreSQL", "MySQL"],
   email: 'cuongdn2001@gmail.com',
   resume_link: 'https://drive.google.com/file/d/1D_E7dgsFJ0QsSITeFXiBe83FADG9Xslm/view?usp=sharing'
@@ -34,6 +34,8 @@ const CHAT = {
     { label: 'Resume', question: 'Can I see his resume?' },
   ],
   placeholder: 'Ask about Johnny…',
+  /** Quiet nudge beside the beacon while the Experience section is in view. */
+  hintLabel: 'Ask me',
   privacyNote: 'This chat stays in your browser.',
   clearLabel: 'Clear',
   /** Shown client-side when the request never made it back at all (offline, parse failure). */
@@ -109,7 +111,7 @@ const PROJECTS: Project[] = [
     id: uuid(),
     title: 'Support Guides Content Management System',
     github: 'https://www.hearingmattersaustralia.org/',
-    image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/Portfolio/master/Public/hma_combine.png',
     description: 'A Content Management System for Hearing Matters Australia, a non-profit organisation. The CMS allows the organisation to manage their website content, including news, events, and resources.',
     stacks: ["React", "Typescript", "Firebase"]
   },
@@ -132,7 +134,7 @@ const PROJECTS: Project[] = [
   {
     id: uuid(),
     title: 'Water Quality Monitoring Platform',
-    image: 'https://github.com/johnnycuongn/Portfolio/blob/master/Public/masked_events_data_tab.png?raw=true',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/Portfolio/master/Public/masked_events_data_tab.png',
     github: 'https://qmdcl.org.au/services-queensland-murray-darling-catchment/',
     description: 'Allow river rangers to collect water quality data in their tablets, and sync the data with site managers',
     stacks: ["React", "Chart.js", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
