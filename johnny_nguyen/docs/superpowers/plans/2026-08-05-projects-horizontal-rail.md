@@ -1,5 +1,11 @@
 # Projects Horizontal Rail Implementation Plan
 
+> **Addendum (2026-08-05):** The 2⅓-cards-in-frame sizing below was superseded
+> the same day by an owner request for 1½ cards in frame. `ProjectRail.css` is
+> the source of truth for the current card-width formula, and the `next/image`
+> `sizes` desktop figure moved to `65vw` accordingly. The rest of this document
+> is left as originally written.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the two-card Projects grid in section 3 with a horizontally scrolling snap rail of tall cards that frames two full cards plus one third of a third.

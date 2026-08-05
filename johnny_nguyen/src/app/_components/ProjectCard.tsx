@@ -32,6 +32,11 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
 
     if (navigating) return;
 
+    if (reduceMotion) {
+      navigate(project.github || FALLBACK_LINK);
+      return;
+    }
+
     await controls.start({
       x: '100%',
       y: '-100%',

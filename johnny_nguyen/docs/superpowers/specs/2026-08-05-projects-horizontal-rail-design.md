@@ -1,5 +1,11 @@
 # Projects Horizontal Rail — Design (2026-08-05)
 
+> **Addendum (2026-08-05):** The 2⅓-cards-in-frame sizing below was superseded
+> the same day by an owner request for 1½ cards in frame. `ProjectRail.css` is
+> the source of truth for the current card-width formula, and the `next/image`
+> `sizes` desktop figure moved to `65vw` accordingly. The rest of this document
+> is left as originally written.
+
 Replace the Projects grid in section 3 with a horizontally scrolling snap rail of tall
 cards. Two goals, both from the site owner:
 

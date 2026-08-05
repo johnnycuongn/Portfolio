@@ -49,7 +49,12 @@ const ProjectRail = () => {
     const onWheel = (e: WheelEvent) => {
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       e.preventDefault();
-      window.scrollBy({ top: e.deltaY });
+      // deltaY is only in pixels when deltaMode is DOM_DELTA_PIXEL. Firefox
+      // reports DOM_DELTA_LINE for physical mouse wheels; forwarding the raw
+      // value there would scroll ~19x too little and the page's debounced snap
+      // would pull it straight back.
+      const factor = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      window.scrollBy({ top: e.deltaY * factor });
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -92,7 +97,10 @@ const ProjectRail = () => {
         </div>
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-r from-transparent to-slate-900"
+          className={
+            'pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-r from-transparent to-slate-900 transition-opacity ' +
+            (atEnd ? 'opacity-0' : 'opacity-100')
+          }
         />
       </div>
 
@@ -109,6 +117,13 @@ const ProjectRail = () => {
             }}
           />
         </div>
+        {/*
+          A plain mouse wheel only emits deltaY, and every wheel event over the
+          rail is now forwarded to the page (see the wheel handler above) — so a
+          desktop user without a trackpad has no wheel-driven way to scroll the
+          rail. These arrows (and arrow-key scrolling) are their only means;
+          treat this block as functionally load-bearing, not decorative.
+        */}
         <div className="hidden gap-2 [@media(pointer:fine)]:flex">
           <button
             type="button"
