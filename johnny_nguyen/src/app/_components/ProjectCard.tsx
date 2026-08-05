@@ -1,4 +1,4 @@
-import { motion, useAnimation } from 'motion/react';
+import { motion, useAnimation, useReducedMotion } from 'motion/react';
 import { FC, memo } from 'react';
 import Image from 'next/image';
 import { FiExternalLink } from "react-icons/fi";
@@ -11,20 +11,21 @@ interface ProjectCardProps {
   projectId: string;
 }
 
+const FALLBACK_LINK = 'https://github.com/johnnycuongn';
+
 const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) => {
 
   const project = PROJECTS.find(project => project.id === projectId) ?? {
     id: '1',
     title: 'Empty',
-    image: 'Empty',
+    image: '',
     github: '',
     description: '',
     stacks: []
   };
   const controls = useAnimation();
+  const reduceMotion = useReducedMotion();
   const { navigating, navigate } = useDelayedLinkOpen(200)
-
-  const isLastOdd = index === 2;
 
   const handleProjectClicked = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -37,7 +38,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
       opacity: 0,
       transition: { duration: 0.5 }
     });
-    navigate(project?.github ?? "https://github.com/johnnycuongn");
+    navigate(project.github || FALLBACK_LINK);
     setTimeout(async () => {
       await controls.start({
         x: '0',
@@ -51,50 +52,57 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      data-rail-card
+      whileHover={reduceMotion ? undefined : { y: -4 }}
       transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-      key={projectId}
-      className={(className ?? '') + ' bg-slate-800 md:p-3 md:m-4 rounded-lg shadow-lg hover:shadow-xl '}>
-        <div
-          className={'overflow-auto relative flex flex-col h-full group/item ' + (isLastOdd ? '' : 'md:flex-row')}
-        >
+      className={(className ?? '') + ' overflow-hidden rounded-lg bg-slate-800 shadow-lg hover:shadow-xl'}>
+        <div className="group/item relative flex h-full flex-col">
           <a
-            href={project.github || 'https://github.com/johnnycuongn'}
+            href={project.github || FALLBACK_LINK}
             onClick={handleProjectClicked}
             className="absolute inset-0 z-10 cursor-pointer"
             aria-label={`${project.title} on GitHub`}
           ></a>
-          <div className="relative flex-shrink-0 w-full md:w-1/2 h-48 md:h-full">
-            <Image
-              className="md:rounded-lg object-cover"
-              src={project.image}
-              alt={`${project.title} preview`}
-              fill
-              sizes="(max-width: 768px) 100vw, 40vw"
-              quality={90}
-              priority={index === 0} // Prioritize the first project image for better LCP
-            />
+
+          <div className="relative shrink-0 basis-[55%] bg-slate-900">
+            {project.image ? (
+              <Image
+                className="object-cover"
+                src={project.image}
+                alt={`${project.title} preview`}
+                fill
+                sizes="(max-width: 768px) 85vw, 41vw"
+                quality={90}
+                priority={index === 0}
+              />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-br from-slate-700/40 to-slate-900" />
+            )}
           </div>
-          <div className="flex flex-col p-5">
-            <div>
-              <h1 className="text-xl font-semibold text-white md:text-2xl transition-all group-hover/item:text-teal-300">
-                {project.title}
-                <motion.span 
-                  className='inline-block ml-2'
-                  animate={controls}
-                  initial={{ x: 0, y: 0, opacity: 1 }}
-                  whileHover={{ x: 5, y: -5, opacity: 1 }}
-                >
-                  <FiExternalLink />
-                </motion.span>
-              </h1>
-              <p className="mt-2 text-md/7 md:text-base text-gray-200">
-                {project.description}
-              </p>
+
+          <div className="flex min-h-0 flex-1 flex-col p-5">
+            <h3 className="text-xl font-semibold text-white transition-colors group-hover/item:text-teal-300 md:text-2xl">
+              {project.title}
+              <motion.span
+                className='inline-block ml-2'
+                animate={controls}
+                initial={{ x: 0, y: 0, opacity: 1 }}
+              >
+                <FiExternalLink />
+              </motion.span>
+            </h3>
+            <p className="mt-2 line-clamp-3 text-sm leading-7 text-gray-300 md:text-base">
+              {project.description}
+            </p>
+            <div className="mt-auto flex flex-wrap gap-1 pt-4">
+              {project.stacks.map((stack) => (
+                <span key={stack} className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300">
+                  {stack}
+                </span>
+              ))}
             </div>
           </div>
         </div>
-       
     </motion.div>
   )
 })
