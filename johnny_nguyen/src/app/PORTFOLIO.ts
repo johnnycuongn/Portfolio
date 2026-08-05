@@ -3,8 +3,8 @@ import { v4 as uuid } from 'uuid';
 const PORTFOLIO = {
   name: "Duc (Johnny) Nguyen",
   role: "Software Engineer",
-  description: "A junior software engineer with 1+ years of experience, who focuses on providing the most high-quality and usable solutions, specialising in React and Typescript. Aimed to deliver projects on time while implementing software engineering practices in the team. Seeking an opportunity for growth, leveraging my software development passion to contribute to high-impact projects.",
-  techs: ["Typescript", ".NET", "Node.js", ".NET Core", "PostgreSQL"],
+  description: "A product-focused software engineer",
+  techs: ["Typescript", "AWS", "Node.js", ".NET Core", "PostgreSQL", "MySQL"],
   email: 'cuongdn2001@gmail.com',
   resume_link: 'https://drive.google.com/file/d/1D_E7dgsFJ0QsSITeFXiBe83FADG9Xslm/view?usp=sharing'
 }
@@ -22,8 +22,34 @@ const PROFILE_LINKS = [
   }
 ]
 
+const CHAT_NAME = 'Firefly';
+
+const CHAT = {
+  /** The firefly hosts the chat. It talks about Johnny, never as Johnny. */
+  name: CHAT_NAME,
+  greeting: "Hi — I hang around this page. Ask me anything about Johnny.",
+  chips: [
+    { label: "What's he working on?", question: "What is Johnny working on right now?" },
+    { label: 'His experience', question: "What's Johnny's experience?" },
+    { label: 'Resume', question: 'Can I see his resume?' },
+  ],
+  placeholder: 'Ask about Johnny…',
+  privacyNote: 'This chat stays in your browser.',
+  clearLabel: 'Clear',
+  /** Shown client-side when the request never made it back at all (offline, parse failure). */
+  offlineMessage: `Can't reach my brain from here. Johnny's inbox always works though — ${PORTFOLIO.email}.`,
+  /** Beacon aria-label when the panel is closed. */
+  openLabel: `Ask ${CHAT_NAME} about Johnny`,
+  /** Beacon and panel-header aria-label when the panel is open. */
+  closeLabel: 'Close chat',
+  /** Dialog aria-label for the panel itself. */
+  dialogLabel: `Chat with ${CHAT_NAME}`,
+};
+
 interface JobTimeLineItem {
   year: string;
+  /** Short label for the timeline axis, e.g. '2023'. Falls back to `year`. */
+  axisLabel?: string;
   title: string;
   company: string;
   content: string;
@@ -32,35 +58,39 @@ interface JobTimeLineItem {
 }
 const JobTimelineData: JobTimeLineItem[] = [
   {
+    year: 'Mar 2025 - Present', 
+    title: 'Software Engineer', 
+    content: "Worked on enterprise systems across various industry sectors, including fiance, advertising compliance, NDIS and insurance. Owned the development of new features, infrastructure, and solutions end-to-end.",
+    axisLabel: 'Now',
+    company: 'iMSX',
+    link: 'https://imsx.com.au/',
+    stacks: ['Typescript', 'AWS', 'Angular', '.NET Core', 'PostgreSQL', 'MySQL', 'MSSQL', 'Docker'],
+  },
+  {
     year: 'Nov 2024 - Feb 2025', 
     title: 'Software Engineer Intern', 
-    content: "Managed and built License Management System from the ground up, which is used to manage Sharepoint Licenses for over 10 clients.",
+    content: "Built and managed a License Management System from the ground up, used to administer SharePoint licenses for 20+ clients.",
+    axisLabel: '2024–25',
     company: 'WebVine',
     link: 'https://webvine.com.au/',
     stacks: ['React', 'Next.js', 'Typescript', 'TailwindCSS', '.NET Core', 'Sharepoint SPFx', 'Azure'],
   },
   {
-    year: 'Nov 2024 - Feb 2025', 
-    title: 'Software Engineer Intern', 
-    content: "Managed and built License Management System from the ground up, which is used to manage Sharepoint Licenses for over 10 clients.",
-    company: 'WebVine',
-    link: 'https://webvine.com.au/',
-    stacks: ['React', 'Next.js', 'Typescript', 'TailwindCSS', '.NET Core', 'Sharepoint SPFx', 'Azure'],
-  },
-  {
-    year: 'Feb - Oct 2023',
+    year: 'Feb 2023 - Oct 2023',
     title: 'Junior Software Engineer',
-    company: 'Orefox AI',
-    content: 'Worked closely with senior engineers to improve current Orefox GeoDesk platforms and new apps. Responsible for advanced features including GeoDesk Scrum Board, Geological Map, Marketplace Platform, and Geologist Chat Platform',
+    axisLabel: '2023',
+    company: 'OreFox AI',
+    content: 'Worked closely with senior engineers to improve the Orefox GeoDesk platform and build new apps, owning advanced features including the Scrum Board, Geological Map, Marketplace, and Geologist Chat platform."',
     link: 'https://orefox.com/',
-    stacks: ['React', 'Typescript', 'jQuery', 'Django', 'PostgreSQL', 'GeoDjango'],
+    stacks: ['React', 'Typescript', 'jQuery', 'Django', 'PostgreSQL', 'GeoDjango', 'AWS'],
   },
   {
-    year: 'Mar - Dec 2022',
+    year: 'Mar 2022 - Dec 2022',
     title: 'Software Engineer',
+    axisLabel: '2022',
     company: 'Queensland Murray Darling Catchment',
     link: 'https://qmdcl.org.au/',
-    content: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, and improved the existing web app for data visualization.',
+    content: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, migrated from Excel to admin platform for data visualisation and analytics.',
     stacks: ['React', 'React Native','Typescript', 'Node.js', 'Material UI', 'Firebase']
     }
 ];
@@ -93,13 +123,13 @@ const PROJECTS: Project[] = [
   },
   {
     id: uuid(),
-    title: 'QMDCL Water Quality Monitoring Platform',
+    title: 'Water Quality Monitoring Platform',
     image: '',
-    github: '',
-    description: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, and improved the existing web app for data visualization.',
+    github: 'https://qmdcl.org.au/services-queensland-murray-darling-catchment/',
+    description: 'Allow river rangers to collect water quality data in their tablets, and sync the data with site managers',
     stacks: ["React", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
   }
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS };
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT };
 export type { JobTimeLineItem, Project };

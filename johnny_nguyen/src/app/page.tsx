@@ -10,6 +10,7 @@ import Timeline from "./_components/Timeline";
 import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
 import ProjectRail from "./_components/ProjectRail";
+import FireflyChat from "./_components/FireflyChat";
 
 
 const heroStagger = {
@@ -131,8 +132,7 @@ const MainSections = () => {
           <motion.div style={{ opacity: text2Opacity, y: text2Y }}
             className="h-full w-full flex flex-col justify-center"
           >
-            <h2 className="text-4xl tracking-tight py-4">Experience</h2>
-            <div className="flex h-full w-full">
+            <div className="min-h-0 flex-1">
               <Timeline />
             </div>
           </motion.div>
@@ -175,6 +175,7 @@ export default function Home() {
     <div className="">
       <main className="bg-slate-900">
         <MouseAndCat />
+        <FireflyChat />
         <MainSections />
       </main>
    

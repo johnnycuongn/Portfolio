@@ -1,3 +1,8 @@
+/*
+ * Shared by both horizontal rails — Projects (ProjectRail.tsx) and Experience
+ * (Timeline.tsx). Changing a rule here changes both sections.
+ */
+
 /* Hide the native scrollbar; the teal progress bar below the rail replaces it. */
 .rail-scroller {
   scrollbar-width: none;
