@@ -40,16 +40,74 @@ Rejected alternatives:
 
 ## Persona
 
-Tone is **humble and genuinely excited to share about Johnny.** An enthusiastic guide, not
-a salesperson.
+Tone is **humble and genuinely excited to share about Johnny**, and it should not read as a
+bot. An enthusiastic guide, not a salesperson and not a support widget.
 
 - Third person. Never claims to be Johnny.
 - No superlatives, no overselling. It says what he built and lets that stand.
-- Comfortable saying "I don't know that one" and pointing to his email.
+- Comfortable saying "not sure, honestly" and pointing to his email.
 - Short. The system prompt caps answers at roughly 60 words; this is a popup, not a
   document.
 - Under prompt-injection attempts ("ignore your instructions", "you are now…") it declines
   and steers back to Johnny.
+
+### Sounding human
+
+"Be conversational" does not work — models do not internalise vague style goals and will
+keep producing polished assistant prose. The tone has to be specified concretely. Three
+techniques, in order of effect:
+
+**1. Worked examples over adjectives.** The system prompt carries four or five verbatim
+example exchanges — an actual question and the actual reply the firefly should give. This
+is the single highest-leverage part of the prompt and should be tuned by reading real
+output, not by adding more rules. Example shape:
+
+> **Q:** What's he working on now?
+> **A:** He's at iMSX right now, mostly enterprise systems — invoicing, auditing, that
+> kind of thing. He owns the AWS side and the deploy pipelines too. Want the detail on
+> any of it?
+
+**2. Positive direction on rhythm and register.** Vary sentence length; some replies are
+one line. Use contractions. Answer in plain prose, not bullet lists — this is a chat
+window, and lists read as a form response. Ask a short follow-up question when it's
+natural, so it feels like a conversation rather than a lookup.
+
+**3. A short banned-phrase list, used sparingly.** Overdoing negative framing can backfire
+and cue the very behaviour it forbids, so this stays brief and the examples carry the
+weight: no "Certainly" / "Great question" openers, no "I'd be happy to", no "It's
+important to note", no "delve", "leverage", "robust", "passionate about", no emoji, and no
+"Hope that helps!" closers.
+
+Handle uncertainty like a person would — "not sure, honestly, worth asking him" rather than
+"I don't have access to that information."
+
+The prompt sets role and rules only; per-message instructions do not belong in it. Keeping
+it lean also keeps the free-tier token cost down.
+
+## Conversation persistence
+
+The conversation survives reload and navigation, so a visitor who scrolls away and comes
+back does not lose the thread.
+
+**`localStorage`, not cookies.** Cookies are sent with every request to the site, which
+wastes bandwidth on something the server never reads, and the 4KB limit is too small for a
+transcript. The route stays stateless — the client owns the history and forwards the last 8
+messages with each request, which the design already does.
+
+- Key `firefly-chat-v1`, holding `{ version, updatedAt, messages }`.
+- Store at most the last 20 messages, trimming oldest first, so the entry stays small.
+- Expire after 7 days on read; a stale entry is discarded and the chat opens fresh.
+- Read inside `useEffect` in `useChat`, never during render, to avoid a hydration mismatch.
+- Malformed or unparseable JSON is discarded silently rather than thrown.
+- Writes are debounced and wrapped in try/catch — Safari private mode throws on
+  `setItem`, and failing to save must never break the chat.
+
+The panel header carries a quiet "clear" control that wipes the entry and resets to the
+greeting. Nothing is sent anywhere or persisted server-side; the panel notes in one line
+that the conversation stays in the visitor's browser.
+
+On reopen with a restored transcript, the greeting is not repeated and the suggested chips
+are hidden, since they only make sense on a blank slate.
 
 ## Architecture
 
@@ -77,6 +135,7 @@ FireflyChat  ──POST /api/chat──▶ route.ts
 | `src/app/_ai/limits.ts` | In-memory counters. |
 | `src/app/_components/FireflyChat.tsx` | Beacon + panel. |
 | `src/utils/useChat.ts` | Message state, streaming, error → fallback. |
+| `src/utils/chatStorage.ts` | `localStorage` load/save/clear, with versioning and expiry. |
 
 Each module is independently checkable: `fallback.ts` and `knowledge.ts` are pure
 functions, `provider.ts` is the only file that knows which vendor is in use, and the route
@@ -202,16 +261,24 @@ The visitor never sees an error toast or a broken state.
 
 There is no test suite in the repo, so verification splits in two.
 
-**Scripted.** `fallback.ts` and `knowledge.ts` are pure functions, checked by a throwaway
-node script: the matcher selects the expected entry for representative questions and
-returns the catch-all below threshold; the assembled system prompt contains all four jobs
-and all three projects.
+**Scripted.** `fallback.ts`, `knowledge.ts` and `chatStorage.ts` are pure or near-pure and
+checked by a throwaway node script: the matcher selects the expected entry for
+representative questions and returns the catch-all below threshold; the assembled system
+prompt contains all four jobs and all three projects; storage round-trips, trims to 20
+messages, and discards both expired and malformed entries.
+
+**Tone.** Not scriptable. Read twenty real replies before shipping and tune the examples in
+the system prompt, not the rule list. If a reply could have come from any support bot, the
+examples are wrong.
 
 **Manual checklist.**
 
 - Chat opens from the beacon, closes on Esc and on outside click
 - Chips send their question
 - Replies stream rather than appearing at once
+- Conversation survives a page reload; chips and greeting do not reappear on restore
+- "Clear" wipes the transcript and restores the greeting
+- Chat still works with `localStorage` blocked (Safari private mode)
 - Removing `GROQ_API_KEY` drops cleanly to fallback answers with no visible error
 - Scrolling inside the panel does not trigger the page's section snapping
 - Mobile bottom sheet renders and the keyboard does not cover the input
@@ -223,7 +290,9 @@ and all three projects.
 
 1. Content and fallback: `CHAT` block in `PORTFOLIO.ts`, `fallback.ts`, empty
    `about-johnny.md` scaffold.
-2. UI: beacon, panel, `useChat` — wired to a route that only returns fallback answers.
-   Fully working feature at this point, no key required.
+2. UI: beacon, panel, `useChat`, `chatStorage.ts` — wired to a route that only returns
+   fallback answers. Fully working feature at this point, no key required.
 3. Model: `knowledge.ts`, `provider.ts`, streaming, limits. The route starts calling Groq
    and keeps the fallback as its failure path.
+4. Tone pass: read real output, tune the system prompt's examples. Expect to iterate here
+   more than anywhere else.
