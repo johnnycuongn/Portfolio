@@ -138,3 +138,21 @@ If you're changing more than content, the conventions worth keeping:
 ## Deploying
 
 Pushing to the connected branch deploys via Vercel. Nothing else is needed — there are no environment variables or backing services.
+
+## Chat (Firefly)
+
+The floating firefly in the bottom-right corner answers questions about Johnny.
+It reads `src/app/PORTFOLIO.ts` plus `src/app/_ai/about-johnny.md` (server-only)
+and streams answers from Groq.
+
+Environment variables — set in `.env.local` for development and in the Vercel
+project settings for Production and Preview:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `GROQ_API_KEY` | No | From https://console.groq.com. Leave the account without a payment method: the free tier is what keeps this feature from ever generating a bill. |
+| `GROQ_MODEL` | No | Defaults to `llama-3.3-70b-versatile`. Use `llama-3.1-8b-instant` for more free-tier headroom. |
+
+With no key set, the chat still works — it serves the hand-written fallback
+answers in `src/app/_ai/fallback.ts`. The same thing happens when the daily
+free-tier quota runs out, so the chat degrades rather than breaking.
