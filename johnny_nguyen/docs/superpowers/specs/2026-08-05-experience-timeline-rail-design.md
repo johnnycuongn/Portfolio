@@ -106,16 +106,22 @@ Active index is derived from `ratio` the same way the Projects counter derives i
 
 One baseline, no alternating. Text-only, so narrower than a project card:
 
-- 85% width on mobile, 2 across at ≥768px, 3 across at ≥1080px. `Rail.css` gains a second
-  class, `.timeline-card`, alongside `.rail-card`; both derive their width from the formula
-  already documented there — `basis = (100% - floor(n) * gap) / n` — and both assume the
-  rail's `gap-4 md:gap-6`. The Projects tiers are unchanged.
+- Both rails share the existing `.rail-card` tiers: 85% on mobile, 1.5 cards at ≥768px,
+  2.333 at ≥1080px. There is deliberately **no** separate `.timeline-card` class. Text-only
+  cards could fit 3 across on desktop, but with only three jobs that leaves nothing to
+  scroll — the axis would go inert and the horizontal-timeline concept would disappear at
+  exactly the width where it should read best. Sharing `.rail-card` guarantees overflow and
+  keeps the two sections in visual rhythm.
+- The scroller is capped at `max-h-[26rem]` and centred vertically in the section. Cards
+  reach equal height by stretching to the scroller, so no measuring pass is needed; the cap
+  is what stops a text-only card from stretching to the full height of a screen-tall
+  section and leaving a void between description and pills.
 - `bg-slate-800 rounded-lg`, matching `ProjectCard`.
 - Contents top to bottom: full date range in `text-sm text-gray-400`; `Title • Company` at
   `text-xl` turning `text-teal-300` on hover, carrying the existing fly-away
   `FiExternalLink` via `useDelayedLinkOpen`; description in `text-gray-300` filling the
   remaining space; teal stack pills pinned to the bottom with `mt-auto`.
-- Cards reach equal height through `h-full` on flex items — no measuring pass.
+- Cards stretch to the capped scroller height, so they are equal without a measuring pass.
 
 ### Motion and behavior
 
@@ -142,8 +148,10 @@ One baseline, no alternating. Text-only, so narrower than a project card:
 
 - Any change to the Projects section's appearance. `ProjectRail` is refactored onto the
   shared hook and must look and behave exactly as it does now.
-- The page-level scroll and snap machinery in `page.tsx`. Section 2's markup is unchanged;
-  `Timeline` continues to fill `h-full`.
+- The page-level scroll and snap machinery in `page.tsx`. Section 2 needs one small sizing
+  change — its `h2` gains `shrink-0` and the `Timeline` wrapper becomes `min-h-0 flex-1`,
+  mirroring Section 3 — because the rail needs a definite height to size cards against.
+  The scroll transforms, snap logic, and container height are untouched.
 - Per-card 3D depth transforms.
 
 ## Verification
