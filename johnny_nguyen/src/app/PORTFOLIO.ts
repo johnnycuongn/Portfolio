@@ -65,15 +65,16 @@ const JobTimelineData: JobTimeLineItem[] = [
     }
 ];
 
-const PROJECTS = [
-  {
-    id: uuid(),
-    title: 'Smart Inventory Management System',
-    github: 'https://github.com/johnnycuongn/Inventory-Management-Sytem',
-    image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
-    description: 'A Smart Inventory System leveraging RFID technology to enhance efficiency in Inbound and Outbound Warehouse Processes.',
-    stacks: ["React", "Typescript", "Node.js", "MongoDB", "Vercel"]
-  },
+interface Project {
+  id: string;
+  title: string;
+  image: string;
+  github: string;
+  description: string;
+  stacks: string[];
+}
+
+const PROJECTS: Project[] = [
   {
     id: uuid(),
     title: 'Smart Inventory Management System',
@@ -95,9 +96,10 @@ const PROJECTS = [
     title: 'QMDCL Water Quality Monitoring Platform',
     image: '',
     github: '',
-    description: ''
+    description: 'Led the development of Water Quality Monitoring platforms, built a new mobile app for river rangers to collect water data in offline mode, and improved the existing web app for data visualization.',
+    stacks: ["React", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
   }
-]
+];
 
 export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS };
-export type { JobTimeLineItem };
+export type { JobTimeLineItem, Project };
