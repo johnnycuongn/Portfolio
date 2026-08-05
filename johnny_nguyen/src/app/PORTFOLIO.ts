@@ -22,6 +22,20 @@ const PROFILE_LINKS = [
   }
 ]
 
+const CHAT = {
+  /** The firefly hosts the chat. It talks about Johnny, never as Johnny. */
+  name: 'Firefly',
+  greeting: "Hi — I hang around this page. Ask me anything about Johnny.",
+  chips: [
+    { label: "What's he working on?", question: "What is Johnny working on right now?" },
+    { label: 'His experience', question: "What's Johnny's experience?" },
+    { label: 'Resume', question: 'Can I see his resume?' },
+  ],
+  placeholder: 'Ask about Johnny…',
+  privacyNote: 'This chat stays in your browser.',
+  clearLabel: 'Clear',
+};
+
 interface JobTimeLineItem {
   year: string;
   /** Short label for the timeline axis, e.g. '2023'. Falls back to `year`. */
@@ -107,5 +121,5 @@ const PROJECTS: Project[] = [
   }
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS };
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT };
 export type { JobTimeLineItem, Project };
