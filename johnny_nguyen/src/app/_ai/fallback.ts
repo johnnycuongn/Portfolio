@@ -12,6 +12,14 @@ export interface FallbackAnswer {
 const current = TimelineData[0];
 const projectTitles = PROJECTS.map((p) => p.title);
 
+/** Convert a number to English words for small counts (1-9+). */
+function numberToWord(n: number): string {
+  const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  return n < words.length ? words[n] : String(n);
+}
+
+const emailAction: ChatAction = { label: 'Email Johnny', href: `mailto:${PORTFOLIO.email}` };
+
 export const FALLBACK_ANSWERS: FallbackAnswer[] = [
   {
     id: 'who',
@@ -32,7 +40,7 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
   {
     id: 'experience',
     triggers: ['experience', 'roles', 'jobs', 'job', 'worked', 'background', 'career', 'history'],
-    answer: `Four roles so far — ${TimelineData.map((j) => j.company).join(', ')}. Everything from water-quality monitoring for river rangers to enterprise invoicing systems. Ask about any one of them.`,
+    answer: `${numberToWord(TimelineData.length).charAt(0).toUpperCase() + numberToWord(TimelineData.length).slice(1)} roles so far — ${TimelineData.map((j) => j.company).join(', ')}. Everything from water-quality monitoring for river rangers to enterprise invoicing systems. Ask about any one of them.`,
   },
   {
     id: 'projects',
@@ -50,13 +58,13 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
     id: 'contact',
     triggers: ['contact', 'email', 'reach', 'hire', 'hiring', 'linkedin', 'get in touch', 'talk to him'],
     answer: `Easiest is email — ${PORTFOLIO.email}. He's on LinkedIn too, and he does actually reply.`,
-    action: { label: 'Email Johnny', href: `mailto:${PORTFOLIO.email}` },
+    action: emailAction,
   },
   {
     id: 'looking',
     triggers: ['looking for', 'available', 'availability', 'open to', 'opportunities', 'next role', 'looking'],
     answer: `He's happiest on product work where he owns a feature end to end. If you've got something in mind, email him at ${PORTFOLIO.email} — that's the fastest route.`,
-    action: { label: 'Email Johnny', href: `mailto:${PORTFOLIO.email}` },
+    action: emailAction,
   },
 ];
 
@@ -64,7 +72,7 @@ export const CATCH_ALL: FallbackAnswer = {
   id: 'catch-all',
   triggers: [],
   answer: `That one's beyond my glow, honestly. Worth asking Johnny directly — ${PORTFOLIO.email}.`,
-  action: { label: 'Email Johnny', href: `mailto:${PORTFOLIO.email}` },
+  action: emailAction,
 };
 
 function normalize(text: string): string {

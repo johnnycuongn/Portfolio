@@ -46,6 +46,9 @@ for (const entry of [...FALLBACK_ANSWERS, CATCH_ALL]) {
     assert.ok(!entry.answer.toLowerCase().includes(phrase.toLowerCase()),
       `"${entry.id}" uses banned phrase "${phrase}"`);
   }
+  // No emoji in answers.
+  assert.ok(!/\p{Extended_Pictographic}/u.test(entry.answer),
+    `"${entry.id}" contains an emoji`);
 }
 
 console.log('check-fallback: ok');
