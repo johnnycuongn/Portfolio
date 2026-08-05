@@ -8,14 +8,16 @@
 }
 
 /*
- * Card width is derived, not tuned. We want one full card plus half of a
- * second card in frame:
+ * Card width is derived, not tuned. With n cards in frame there are floor(n)
+ * gaps in frame, so:
  *
- *   1½ cards + 1 gap = 100%   ->   basis = (100% - 1 * gap) / 1.5
+ *   basis = (100% - floor(n) * gap) / n
  *
- * The 1.5rem below is 1 * the 1.5rem (gap-6) used on the scroller at md+
- * (with n cards in frame there are floor(n) gaps in frame, so 1.5 cards
- * means 1 gap, not 2). If the gap changes, change this with it.
+ *   >= 768px   1.5 cards   + 1 gap  ->  (100% - 1.5rem) / 1.5
+ *   >= 1080px  2.333 cards + 2 gaps ->  (100% - 3rem)   / 2.333
+ *
+ * The gap is 1.5rem (md:gap-6) at both desktop tiers. If the gap changes,
+ * both subtrahends change with it.
  */
 .rail-card {
   flex: 0 0 85%;
@@ -24,5 +26,11 @@
 @media (min-width: 768px) {
   .rail-card {
     flex: 0 0 calc((100% - 1.5rem) / 1.5);
+  }
+}
+
+@media (min-width: 1080px) {
+  .rail-card {
+    flex: 0 0 calc((100% - 3rem) / 2.333);
   }
 }

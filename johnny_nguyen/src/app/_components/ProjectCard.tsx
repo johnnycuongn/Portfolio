@@ -81,7 +81,7 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
                 src={project.image}
                 alt={`${project.title} preview`}
                 fill
-                sizes="(max-width: 768px) 85vw, 65vw"
+                sizes="(max-width: 767px) 85vw, (max-width: 1079px) 65vw, 41vw"
                 quality={90}
                 priority={index === 0}
               />
