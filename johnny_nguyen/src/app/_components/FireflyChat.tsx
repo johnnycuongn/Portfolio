@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { CHAT } from '../PORTFOLIO';
 import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useChat from '@/utils/useChat';
 
 const GLOW = 'radial-gradient(circle, rgba(230,255,150,1) 0%, rgba(230,255,150,0.8) 25%, rgba(230,255,150,0.4) 50%, rgba(230,255,150,0) 75%)';
+
+/** The beacon drifts inside a 100×100 box, up and left of its dock. */
+const WANDER_BOX = 100;
+const WANDER_EVERY_MS = 3000;
+const WANDER_DURATION = 2.4;
 
 function FireflyDot({ size = 8, fast = false }: { size?: number; fast?: boolean }) {
   const reduceMotion = useReducedMotion();
@@ -53,6 +58,55 @@ export default function FireflyChat() {
       window.removeEventListener('resize', read);
     };
   }, []);
+
+  // Hovered or keyboard-focused. A wandering button is a moving target, so
+  // engaging it settles the firefly on the spot and surfaces the hint.
+  const [engaged, setEngaged] = useState(false);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const wanderControls = useRef<{ stop: () => void }[]>([]);
+  const stopWander = useCallback(() => {
+    wanderControls.current.forEach((control) => control.stop());
+    wanderControls.current = [];
+  }, []);
+
+  // Idle drift, on the same cadence as the wandering firefly in MouseAndCat so
+  // the two read as the same creature. Offsets are negative only: the beacon
+  // is docked at the bottom-right corner, so it can drift up and left without
+  // ever leaving the viewport.
+  useEffect(() => {
+    if (reduceMotion || open || engaged) {
+      stopWander();
+      return;
+    }
+    const drift = () => {
+      stopWander();
+      const settings = { duration: WANDER_DURATION, ease: 'easeInOut' as const };
+      wanderControls.current = [
+        animate(x, -Math.random() * WANDER_BOX, settings),
+        animate(y, -Math.random() * WANDER_BOX, settings),
+      ];
+    };
+    drift();
+    const id = setInterval(drift, WANDER_EVERY_MS);
+    return () => {
+      clearInterval(id);
+      stopWander();
+    };
+  }, [reduceMotion, open, engaged, stopWander, x, y]);
+
+  // Come home when the panel opens. The panel unfurls from the dock corner, so
+  // the beacon has to be there for the two to read as one gesture.
+  useEffect(() => {
+    if (!open) return;
+    stopWander();
+    const controls = [
+      animate(x, 0, { duration: 0.3, ease: 'easeOut' }),
+      animate(y, 0, { duration: 0.3, ease: 'easeOut' }),
+    ];
+    return () => controls.forEach((control) => control.stop());
+  }, [open, stopWander, x, y]);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const beaconRef = useRef<HTMLButtonElement>(null);
@@ -124,38 +178,48 @@ export default function FireflyChat() {
 
   return (
     <>
-      {/* Decorative reinforcement of the beacon's own aria-label, so it is
-          aria-hidden rather than announced twice. */}
-      <AnimatePresence>
-        {inExperience && !open && (
-          <motion.span
-            aria-hidden
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6 }}
-            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="pointer-events-none fixed bottom-6 right-[4.75rem] z-[200] flex h-11 items-center whitespace-nowrap text-xs text-gray-400"
-          >
-            {CHAT.hintLabel}
-          </motion.span>
-        )}
-      </AnimatePresence>
-
-      <motion.button
-        ref={beaconRef}
-        type="button"
-        aria-label={open ? CHAT.closeLabel : CHAT.openLabel}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-[200] flex h-11 w-11 items-center justify-center rounded-full"
-        // One quiet nudge after 8s, matching the nav's idle personality.
-        animate={reduceMotion ? undefined : { y: [0, 0, -6, 0] }}
-        transition={reduceMotion ? undefined : { duration: 8.6, times: [0, 0.93, 0.97, 1] }}
-        whileHover={{ scale: 1.15 }}
-        whileTap={{ scale: 0.92 }}
+      {/* Label and beacon share one drifting container so the hint travels with
+          the firefly instead of being left behind at a fixed offset. */}
+      <motion.div
+        style={{ x, y }}
+        className="fixed bottom-6 right-6 z-[200] flex h-11 items-center"
       >
-        <FireflyDot size={14} />
-      </motion.button>
+        {/* Decorative reinforcement of the beacon's own aria-label, so it is
+            aria-hidden rather than announced twice. */}
+        <AnimatePresence>
+          {(inExperience || engaged) && !open && (
+            <motion.span
+              aria-hidden
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6 }}
+              animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="pointer-events-none absolute right-full mr-2 whitespace-nowrap text-xs text-gray-400"
+            >
+              {CHAT.hintLabel}
+            </motion.span>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          ref={beaconRef}
+          type="button"
+          aria-label={open ? CHAT.closeLabel : CHAT.openLabel}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          onHoverStart={() => setEngaged(true)}
+          onHoverEnd={() => setEngaged(false)}
+          onFocus={() => setEngaged(true)}
+          onBlur={() => setEngaged(false)}
+          className="flex h-11 w-11 items-center justify-center rounded-full"
+          // The drift is the idle personality now — the old 8s nudge would be a
+          // second, competing one.
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.92 }}
+        >
+          <FireflyDot size={14} />
+        </motion.button>
+      </motion.div>
 
       <AnimatePresence>
         {open && (
@@ -224,23 +288,27 @@ export default function FireflyChat() {
                 message.role === 'user' ? (
                   <p
                     key={message.id}
-                    className="ml-auto w-fit max-w-[85%] rounded-2xl bg-teal-400/10 px-3 py-2 text-sm leading-6 text-teal-300"
+                    className="ml-auto w-fit max-w-[85%] break-words rounded-2xl bg-teal-400/10 px-3 py-2 text-sm leading-6 text-teal-300"
                   >
                     {message.text}
                   </p>
                 ) : (
+                  // `min-w-0` on the text column is what actually contains a long
+                  // unbreakable URL: flex items default to min-width:auto and refuse
+                  // to shrink below their content, so without it the reply bursts
+                  // out of the panel on both sides.
                   <div key={message.id} className="flex max-w-[90%] gap-2">
                     <span className="mt-2 shrink-0">
                       <FireflyDot size={6} fast={isStreaming && !message.text} />
                     </span>
-                    <div>
-                      <p className="text-sm leading-6 text-gray-200">{message.text}</p>
+                    <div className="min-w-0">
+                      <p className="break-words text-sm leading-6 text-gray-200">{message.text}</p>
                       {message.action && (
                         <a
                           href={message.action.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-1 inline-block text-xs text-teal-300 hover:underline"
+                          className="mt-1 inline-block break-all text-xs text-teal-300 hover:underline"
                         >
                           {message.action.label} →
                         </a>
