@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts"
+    "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts && tsx scripts/check-storage.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.1",
