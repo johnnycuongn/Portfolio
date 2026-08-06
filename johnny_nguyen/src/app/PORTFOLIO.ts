@@ -11,6 +11,25 @@ const PORTFOLIO = {
   resume_link: 'https://drive.google.com/file/d/1nylzdAasJc48p0r7q6GyOYGKdvOIeI6n/view?usp=sharing'
 }
 
+/**
+ * The resume as it appears on the page. The PDF is self-hosted and is both the
+ * download target and the fallback if a page image will not render; the page
+ * images beside it are generated from that PDF by `npm run resume`.
+ */
+const RESUME = {
+  pdf: '/resume.pdf',
+  navTitle: 'View my resume without leaving the page',
+  downloadLabel: 'Download PDF',
+  closeLabel: 'Close resume',
+  dialogLabel: `${PORTFOLIO.name} — resume`,
+  zoomInLabel: 'Zoom in to read',
+  zoomOutLabel: 'Fit the whole page',
+  /** `{n}` and `{total}` are substituted per page at render. */
+  pageAlt: 'Resume, page {n} of {total}',
+  /** Replaces the sheet when a page image fails to load. */
+  errorMessage: 'The resume would not render here.',
+};
+
 const PROFILE_LINKS = [
   {
     id: uuid(),
@@ -143,5 +162,5 @@ const PROJECTS: Project[] = [
   },
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT };
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, RESUME };
 export type { JobTimeLineItem, Project };
