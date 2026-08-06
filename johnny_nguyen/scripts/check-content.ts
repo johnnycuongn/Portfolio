@@ -4,7 +4,13 @@ import { CHAT } from '../src/app/PORTFOLIO';
 assert.equal(typeof CHAT.name, 'string');
 assert.ok(CHAT.name.length > 0, 'firefly needs a name');
 assert.ok(CHAT.greeting.length > 0, 'greeting must not be empty');
-assert.equal(CHAT.chips.length, 3, 'exactly three opening chips');
+// Bounded rather than exact: the count is a copy decision, but the chips sit on one
+// or two rows of a 360px panel, and past four they crowd out the greeting they are
+// meant to sit under.
+assert.ok(
+  CHAT.chips.length >= 2 && CHAT.chips.length <= 4,
+  `expected 2-4 opening chips, got ${CHAT.chips.length}`,
+);
 for (const chip of CHAT.chips) {
   assert.ok(chip.label.length > 0, 'chip needs a label');
   assert.ok(chip.question.length > 0, 'chip needs a question to send');
