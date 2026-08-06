@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     ],
   },
   outputFileTracingIncludes: {
-    '/api/chat': ['./src/app/_ai/about-johnny.md'],
+    '/api/chat': ['./src/app/PORTFOLIO_AI_knowledge.md'],
   },
 };
 

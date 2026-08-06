@@ -90,18 +90,18 @@ assert.ok(
 // "More about Johnny" section must appear in the real prompt if and only if
 // the real file actually has prose. This passes today (headings-only) and
 // will keep passing the moment Johnny writes real content.
-const aboutPath = path.join(process.cwd(), 'src/app/_ai/about-johnny.md');
-const aboutRaw = fs.readFileSync(aboutPath, 'utf8');
-const aboutProse = extractKnowledgeProse(aboutRaw);
-if (aboutProse) {
+const knowledgePath = path.join(process.cwd(), 'src/app/PORTFOLIO_AI_knowledge.md');
+const knowledgeRaw = fs.readFileSync(knowledgePath, 'utf8');
+const knowledgeProse = extractKnowledgeProse(knowledgeRaw);
+if (knowledgeProse) {
   assert.ok(
     prompt.includes('More about Johnny'),
-    'about-johnny.md has prose, so the prompt should include the "More about Johnny" section',
+    'PORTFOLIO_AI_knowledge.md has prose, so the prompt should include the "More about Johnny" section',
   );
 } else {
   assert.ok(
     !prompt.includes('More about Johnny'),
-    'about-johnny.md is headings-only, so the prompt should not include an empty "More about Johnny" section',
+    'PORTFOLIO_AI_knowledge.md is headings-only, so the prompt should not include an empty "More about Johnny" section',
   );
 }
 
