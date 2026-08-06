@@ -5,6 +5,7 @@ import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } fr
 import { CHAT } from '../PORTFOLIO';
 import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useChat from '@/utils/useChat';
+import useFocusTrap from '@/utils/useFocusTrap';
 import useKeyboardInset from '@/utils/useKeyboardInset';
 
 const GLOW = 'radial-gradient(circle, rgba(230,255,150,1) 0%, rgba(230,255,150,0.8) 25%, rgba(230,255,150,0.4) 50%, rgba(230,255,150,0) 75%)';
@@ -145,29 +146,20 @@ export default function FireflyChat() {
     scrolledSinceOpen.current = true;
   }, [messages, isStreaming, reduceMotion, open, keyboardInset]);
 
-  // Esc closes. Tab cycles within the panel rather than escaping to the page.
-  const onPanelKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      event.stopPropagation();
-      setOpen(false);
-      return;
-    }
-    if (event.key !== 'Tab' || !panelRef.current) return;
+  const trapTab = useFocusTrap(panelRef);
 
-    const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }, []);
+  // Esc closes. Tab cycles within the panel rather than escaping to the page.
+  const onPanelKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        setOpen(false);
+        return;
+      }
+      trapTab(event);
+    },
+    [trapTab],
+  );
 
   // The draft is only cleared once `send` reports the message was actually
   // accepted — typing a follow-up mid-stream is rejected (and the disabled
