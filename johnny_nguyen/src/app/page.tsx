@@ -66,6 +66,13 @@ const MainSections = () => {
   const text3Opacity = useTransform(scrollY, [sectionHeight * 1.5, sectionHeight * 2], [0, 1]);
   const text3Y = useTransform(scrollY, [sectionHeight * 1.5, sectionHeight * 2], [50, 0]);
 
+  // The scroll cue has done its job the moment the page moves, so it leaves
+  // well before the hero copy does — a hint that lingers reads as decoration.
+  const cueOpacity = useTransform(scrollY, [0, sectionHeight * 0.15], [1, 0]);
+  // At zero opacity it is still a button sitting over the page. Stop it
+  // swallowing clicks meant for whatever has scrolled underneath it.
+  const cuePointerEvents = useTransform(cueOpacity, (o) => (o < 0.05 ? 'none' : 'auto'));
+
   // Measure the container rather than asking the window: the container is
   // exactly three sections tall, so a third of it is a section by construction
   // and cannot drift from what CSS actually laid out. `window.innerHeight` can
@@ -220,6 +227,29 @@ const MainSections = () => {
             </motion.div>
           </motion.div>
         </div>
+
+        {/* Scroll cue. A hairline running off the bottom of the hero with the
+            chevron falling down it — the gesture the page wants, drawn once. */}
+        <motion.button
+          type="button"
+          aria-label="Scroll to experience"
+          onClick={() => window.scrollTo({ top: sectionHeight, behavior: reduceMotion ? 'auto' : 'smooth' })}
+          style={{ opacity: cueOpacity, pointerEvents: cuePointerEvents }}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-teal-300/60 transition-colors hover:text-teal-300"
+        >
+          <span aria-hidden className="h-6 w-px bg-gradient-to-b from-transparent to-current" />
+          <motion.svg
+            aria-hidden
+            width="14"
+            height="8"
+            viewBox="0 0 14 8"
+            fill="none"
+            animate={reduceMotion ? undefined : { y: [0, 4, 0], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <path d="M1 1L7 6.5L13 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </motion.svg>
+        </motion.button>
       </div>
       {/* Section 2 */}
       <motion.div
