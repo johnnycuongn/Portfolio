@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { CHAT } from '../PORTFOLIO';
+import ContactSendButton from './ContactSendButton';
 import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useChat from '@/utils/useChat';
 import useFocusTrap from '@/utils/useFocusTrap';
@@ -315,7 +316,9 @@ export default function FireflyChat() {
                     <div className="min-w-0">
                       <p className="break-words text-sm leading-6 text-gray-200">{message.text}</p>
                       {message.action &&
-                        (message.action.opens === 'resume' ? (
+                        (message.action.sends ? (
+                          <ContactSendButton draft={message.action.sends} />
+                        ) : message.action.opens === 'resume' ? (
                           <button
                             type="button"
                             onClick={openResume}
