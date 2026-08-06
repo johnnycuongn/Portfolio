@@ -11,6 +11,15 @@ const PORTFOLIO = {
 }
 
 /**
+ * What sits underneath a tech pill. A tag listed here unfurls its services when
+ * a visitor hovers (or taps) it; anything absent stays a plain pill. Keys must
+ * match `PORTFOLIO.techs` exactly.
+ */
+const TECH_SERVICES: Record<string, string[]> = {
+  AWS: ['EC2', 'ECS', 'ECR','EventBridge', 'Lambda', 'RDS', 'S3', 'CloudFront', 'IAM', 'CloudWatch', 'CloudFormation', 'Route 53'],
+};
+
+/**
  * The resume as it appears on the page. The PDF is self-hosted and is both the
  * download target and the fallback if a page image will not render; the page
  * images beside it are generated from that PDF by `npm run resume`.
@@ -52,6 +61,7 @@ const CHAT = {
     { label: `Who is ${PORTFOLIO.preferred_name}?`, question: `Who is ${PORTFOLIO.preferred_name}? Tell me about ${PORTFOLIO.pronouns}.` },
     { label: 'His experience', question: `What's ${PORTFOLIO.preferred_name}'s experience?` },
     { label: 'Resume', question: `Can I see ${PORTFOLIO.preferred_name}'s resume?` },
+    { label: 'Fun fact about Johnny', question: `Tell me a fun fact about ${PORTFOLIO.preferred_name}.` },
   ],
   placeholder: `Ask about ${PORTFOLIO.preferred_name}…`,
   /** Quiet nudge beside the beacon while the Experience section is in view. */
@@ -171,5 +181,5 @@ const PROJECTS: Project[] = [
   },
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, RESUME };
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, RESUME, TECH_SERVICES };
 export type { JobTimeLineItem, Project };

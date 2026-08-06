@@ -14,6 +14,7 @@ import FireflyChat from "./_components/FireflyChat";
 import useKeyboardInset from "@/utils/useKeyboardInset";
 import { isBodyScrollLocked } from "@/utils/useBodyScrollLock";
 import ResumeViewer from "./_components/ResumeViewer";
+import TechTags from "./_components/TechTags";
 import useResumeViewer, { ResumeViewerProvider } from "@/utils/useResumeViewer";
 
 
@@ -202,11 +203,9 @@ const MainSections = () => {
             animate="show"
           >
             <motion.p variants={heroItem} className="text-base md:text-lg leading-8">{PORTFOLIO.description}</motion.p>
-            <motion.ul variants={heroItem} className="flex flex-wrap gap-4 text-xl mt-4">
-                {PORTFOLIO.techs.map((tech) => (
-                  <li key={tech} className="flex items-center rounded-full bg-teal-400/10 px-3 py-1 text-xs font-medium leading-5 text-teal-300 ">{tech}</li>
-                ))}
-            </motion.ul>
+            <motion.div variants={heroItem} className="mt-4">
+              <TechTags />
+            </motion.div>
           </motion.div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { PORTFOLIO, TimelineData, PROJECTS } from '../PORTFOLIO';
+import { PORTFOLIO, TimelineData, PROJECTS, TECH_SERVICES } from '../PORTFOLIO';
 
 /** Serialized from PORTFOLIO.ts so the firefly can never drift from the page. */
 export function portfolioFacts(): string {
@@ -13,9 +13,14 @@ export function portfolioFacts(): string {
     (project) => `- ${project.title}. ${project.description} Stack: ${project.stacks.join(', ')}.`,
   ).join('\n');
 
+  const services = Object.entries(TECH_SERVICES)
+    .map(([tech, list]) => `${tech}: ${list.join(', ')}`)
+    .join('. ');
+
   return [
     `Name: ${PORTFOLIO.name}. Role: ${PORTFOLIO.role}. ${PORTFOLIO.description}.`,
     `Main technologies: ${PORTFOLIO.techs.join(', ')}.`,
+    `Services used within those: ${services}.`,
     `Email: ${PORTFOLIO.email}`,
     'The resume opens on this page, and you can open it yourself (see the actions below). The dialog offers a PDF download. There is no link to hand out.',
     '',
