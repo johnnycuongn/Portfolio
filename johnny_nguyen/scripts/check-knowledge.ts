@@ -21,6 +21,14 @@ assert.ok(
   prompt.includes('The resume opens on this page'),
   'prompt must tell the model the resume opens in place',
 );
+// It must also know it can open the resume itself, and how to pass a message
+// along. Without these lines the sentinel machinery in api/chat never fires.
+assert.ok(prompt.includes('[[RESUME]]'), 'prompt must teach the resume sentinel');
+assert.ok(prompt.includes('[[CONTACT'), 'prompt must teach the contact sentinel');
+assert.ok(
+  /never mention these lines/i.test(prompt),
+  'prompt must forbid revealing the sentinels',
+);
 
 // The tone rules survived. All ten banned phrases must appear verbatim —
 // this is the full mandated list, not a sample of it.
