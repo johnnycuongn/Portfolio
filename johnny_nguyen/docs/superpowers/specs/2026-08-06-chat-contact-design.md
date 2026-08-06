@@ -163,7 +163,7 @@ matter.
 ### New files
 
 Sentinel parsing lives under `_ai/` because it parses *model output*; `_contact/` holds only the
-email side. That keeps the dependency pointing one way — `_ai/` may import `_contact/types`, never
+email side. That keeps the dependency pointing one way — `_ai/` may import `_contact/draft`, never
 the reverse.
 
 - **`src/app/_ai/sentinel.ts`** — pure, no I/O, and the piece worth getting right:
