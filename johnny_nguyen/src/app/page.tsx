@@ -177,6 +177,18 @@ const MainSections = () => {
     // `svh`, the height that is on screen even with the bar showing, so a
     // section is never taller than the window it has to fit in.
     <div ref={containerRef} className="h-[300vh] w-full">
+      {/* Snap anchors. Every act is `fixed`, so there is nothing in flow for the
+          browser to snap to — these empty siblings stand in for them, one per
+          viewport, exactly filling the container. `snap-always` is the bit that
+          makes the page read like a feed of cards rather than a document: the
+          browser refuses to pass a snap point, so however hard the flick, one
+          gesture moves one act and the next act catches it. Sized in `vh` to
+          match the container: these mark where the page may come to rest, which
+          is the same measurement the snap in the effect above is working from,
+          and the two disagreeing is how the acts end up half-and-half. */}
+      {Array.from({ length: SECTION_COUNT }, (_, act) => (
+        <div key={act} aria-hidden className="h-[100vh] snap-start snap-always" />
+      ))}
 
       <PortfolioNavBar />
       {/* Section 1 */}

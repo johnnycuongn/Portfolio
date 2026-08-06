@@ -14,6 +14,21 @@
   }
 }
 
+/* Sticky paging, phone-first. The three acts are full-viewport, so the page is
+   a stack of cards rather than a document, and mandatory snapping is what stops
+   it ever coming to rest showing two halves of two acts — a thumb lets go and
+   the nearest act takes the page, the way a video feed does.
+
+   Touch only, deliberately. A wheel or a trackpad is a far finer instrument
+   than a thumb, and taking the scroll away from one is how a desktop page
+   starts feeling like it is fighting the reader; `page.tsx` already settles
+   those onto the nearest act once they stop, without ever refusing a scroll. */
+@media (pointer: coarse) {
+  html {
+    scroll-snap-type: y mandatory;
+  }
+}
+
 body {
   color: var(--foreground);
   background: #0f172a; /* slate-900, matches <main> — avoids white overscroll flash */

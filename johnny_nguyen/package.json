@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.1",
+    "@vercel/analytics": "^2.0.1",
     "motion": "^12.4.4",
     "next": "15.1.11",
     "react": "^19.0.0",

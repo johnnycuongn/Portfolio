@@ -409,7 +409,15 @@ export default function FireflyChat() {
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder={CHAT.placeholder}
                 aria-label={CHAT.placeholder}
-                className="w-full rounded-full bg-slate-900 px-4 py-2 text-sm text-white outline-none placeholder:text-gray-500 focus:ring-1 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50"
+                // 16px on a phone, and that number is not a design choice: iOS
+                // Safari zooms the whole page in on focusing any field whose
+                // text is smaller, to bring it up to something legible. The
+                // page it zooms includes this panel, which is sized to the
+                // viewport — so the sheet grows past the screen and spills off
+                // the top the moment the visitor taps the input. At 16px there
+                // is nothing to correct and no zoom. Desktop keeps the 14px the
+                // rest of the panel is set in.
+                className="w-full rounded-full bg-slate-900 px-4 py-2 text-base text-white outline-none placeholder:text-gray-500 focus:ring-1 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
               />
               <p className="mt-2 text-center text-[10px] text-gray-500">{CHAT.privacyNote}</p>
             </form>
