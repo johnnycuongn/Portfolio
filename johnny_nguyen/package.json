@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "resume": "tsx scripts/build-resume.ts",
     "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts && tsx scripts/check-storage.ts && tsx scripts/check-limits.ts && tsx scripts/check-knowledge.ts && tsx scripts/check-resume.ts"
   },
   "dependencies": {
