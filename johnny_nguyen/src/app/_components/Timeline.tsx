@@ -71,14 +71,14 @@ const Timeline = () => {
             className={
               // `overflow-y-hidden` is load-bearing: setting only overflow-x
               // makes CSS compute the unset overflow-y as `auto`, so on a
-              // viewport too short for line mode's fixed 32rem wrapper the card
+              // viewport too short for line mode's fixed 36rem wrapper the card
               // area would become a vertical scroller and the lower row could
               // be scrolled out of view. Clipping is the intended failure mode.
               'rail-scroller h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain ' +
-              // Line mode's wrapper is a fixed 32rem (two 15rem cards either
+              // Line mode's wrapper is a fixed 36rem (two 17rem cards either
               // side of the line); the cap has to clear it or the lower row of
               // cards is clipped. Rail mode keeps its own 26rem cap.
-              (isLine ? 'max-h-[32rem]' : 'max-h-[26rem]')
+              (isLine ? 'max-h-[36rem]' : 'max-h-[26rem]')
             }
           >
             {/*
@@ -90,7 +90,7 @@ const Timeline = () => {
             */}
             <div className={
               'relative flex min-w-full gap-4 md:gap-6 ' +
-              (isLine ? 'h-[32rem] items-start' : 'h-full items-stretch')
+              (isLine ? 'h-[36rem] items-start' : 'h-full items-stretch')
             }>
               {/*
                 Waiting on the measurement matters: the line carries a

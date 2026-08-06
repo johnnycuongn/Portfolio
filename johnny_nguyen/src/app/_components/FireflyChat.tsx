@@ -5,11 +5,12 @@ import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } fr
 import { CHAT } from '../PORTFOLIO';
 import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useChat from '@/utils/useChat';
+import useKeyboardInset from '@/utils/useKeyboardInset';
 
 const GLOW = 'radial-gradient(circle, rgba(230,255,150,1) 0%, rgba(230,255,150,0.8) 25%, rgba(230,255,150,0.4) 50%, rgba(230,255,150,0) 75%)';
 
 /** The beacon drifts inside a 100×100 box, up and left of its dock. */
-const WANDER_BOX = 100;
+const WANDER_BOX = 50;
 const WANDER_EVERY_MS = 3000;
 const WANDER_DURATION = 2.4;
 
@@ -38,6 +39,7 @@ export default function FireflyChat() {
   const [draft, setDraft] = useState('');
   const { messages, isStreaming, hasHistory, send, clear } = useChat();
   const reduceMotion = useReducedMotion();
+  const { inset: keyboardInset, visibleHeight } = useKeyboardInset();
 
   // The Experience section is the page's second full-viewport act. `page.tsx`
   // decides the active section by rounding scrollY against the viewport height;
@@ -127,6 +129,8 @@ export default function FireflyChat() {
   // bottom as new messages arrive. Smooth-scroll only for a settled reply while
   // already open; mid-stream (one update per token) and reduced-motion both fall
   // back to an instant jump so the list never stacks overlapping animations.
+  // The keyboard counts as a new message would: it takes height off the list, so
+  // whatever was at the bottom has to be chased back into view.
   const scrolledSinceOpen = useRef(false);
   useEffect(() => {
     if (!open) {
@@ -139,7 +143,7 @@ export default function FireflyChat() {
       block: 'end',
     });
     scrolledSinceOpen.current = true;
-  }, [messages, isStreaming, reduceMotion, open]);
+  }, [messages, isStreaming, reduceMotion, open, keyboardInset]);
 
   // Esc closes. Tab cycles within the panel rather than escaping to the page.
   const onPanelKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -232,7 +236,18 @@ export default function FireflyChat() {
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-            style={{ transformOrigin: 'bottom right', boxShadow: '0 0 40px rgba(230,255,150,0.08)' }}
+            style={{
+              transformOrigin: 'bottom right',
+              boxShadow: '0 0 40px rgba(230,255,150,0.08)',
+              // Ride up onto the keyboard instead of hiding behind it, and give
+              // back the height it took so the input stays the panel's floor —
+              // the transcript above it shrinks. Both are 0 until a keyboard is
+              // actually open, leaving the classes below in charge everywhere else.
+              ...(keyboardInset > 0 && {
+                bottom: keyboardInset,
+                maxHeight: visibleHeight - 16,
+              }),
+            }}
             className="fixed inset-x-0 bottom-0 z-[200] flex h-[85dvh] flex-col rounded-t-2xl bg-slate-800 text-white sm:inset-x-auto sm:bottom-20 sm:right-6 sm:h-[480px] sm:w-[360px] sm:rounded-2xl"
           >
             <header className="flex shrink-0 items-center gap-2 px-4 py-3">

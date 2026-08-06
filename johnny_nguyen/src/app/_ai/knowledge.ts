@@ -45,7 +45,7 @@ export function extractKnowledgeProse(raw: string): string {
 /** Read once at cold start. An absent file is not an error — it just means less colour. */
 function readAboutFile(): string {
   try {
-    const filePath = path.join(process.cwd(), 'src/app/_ai/about-johnny.md');
+    const filePath = path.join(process.cwd(), 'src/app/PORTFOLIO_AI_knowledge.md');
     return extractKnowledgeProse(fs.readFileSync(filePath, 'utf8'));
   } catch {
     return '';
@@ -88,7 +88,7 @@ A: I only really know one subject, and it's Johnny. Ask me something about him?`
 /**
  * Pure composition step, split out from `buildSystemPrompt` so tests can exercise
  * the prose-bearing path against arbitrary content without touching the real
- * about-johnny.md file on disk.
+ * PORTFOLIO_AI_knowledge.md file on disk.
  */
 export function composeSystemPrompt(aboutSection: string): string {
   return [

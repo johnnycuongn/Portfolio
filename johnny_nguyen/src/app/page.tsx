@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import PortfolioNavBar from "./_components/main_navigations";
 
 import { PORTFOLIO, PROFILE_LINKS } from "./PORTFOLIO";
@@ -11,7 +11,12 @@ import PublicProfilesBar from "./_components/ProfilesLinkGroup";
 import MouseAndCat from "./_components/MouseAndCat";
 import ProjectRail from "./_components/ProjectRail";
 import FireflyChat from "./_components/FireflyChat";
+import useKeyboardInset from "@/utils/useKeyboardInset";
 
+
+// Hero, Experience, Projects. The container is this many viewports tall and the
+// snap divides by it — the three move together.
+const SECTION_COUNT = 3;
 
 const heroStagger = {
   hidden: {},
@@ -33,66 +38,132 @@ const MainSections = () => {
   const section1Ref = useRef<HTMLDivElement>(null);
   const section2Ref = useRef<HTMLDivElement>(null);
   const section3Ref = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(0);
+  const [sectionHeight, setSectionHeight] = useState(0);
+  // The act the page is parked on. A settle may move this by one at most —
+  // see the clamp in `snap`.
+  const parkedRef = useRef(0);
   const reduceMotion = useReducedMotion();
+  const { inset: keyboardInset } = useKeyboardInset();
 
   const { scrollY } = useScroll();
 
-  const y2 = useTransform(scrollY, [0, containerHeight], [0, -containerHeight]);
+  const y2 = useTransform(scrollY, [0, sectionHeight], [0, -sectionHeight]);
 
-  const y3 = useTransform(scrollY, [containerHeight, containerHeight*2], [0, -containerHeight]);
+  const y3 = useTransform(scrollY, [sectionHeight, sectionHeight*2], [0, -sectionHeight]);
 
   // Text animations
-  const text1Opacity = useTransform(scrollY, [0, containerHeight / 2], [1, 0]);
-  const text1Y = useTransform(scrollY, [0, containerHeight / 2], [0, -50]);
+  const text1Opacity = useTransform(scrollY, [0, sectionHeight / 2], [1, 0]);
+  const text1Y = useTransform(scrollY, [0, sectionHeight / 2], [0, -50]);
 
-  const text2Opacity = useTransform(scrollY, [containerHeight / 2, containerHeight, containerHeight * 1.5], [0, 1, 0]);
-  const text2Y = useTransform(scrollY, [containerHeight / 2, containerHeight], [-100, 0]);
+  const text2Opacity = useTransform(scrollY, [sectionHeight / 2, sectionHeight, sectionHeight * 1.5], [0, 1, 0]);
+  const text2Y = useTransform(scrollY, [sectionHeight / 2, sectionHeight], [-100, 0]);
 
-  const text3Opacity = useTransform(scrollY, [containerHeight * 1.5, containerHeight * 2], [0, 1]);
-  const text3Y = useTransform(scrollY, [containerHeight * 1.5, containerHeight * 2], [50, 0]);
+  const text3Opacity = useTransform(scrollY, [sectionHeight * 1.5, sectionHeight * 2], [0, 1]);
+  const text3Y = useTransform(scrollY, [sectionHeight * 1.5, sectionHeight * 2], [50, 0]);
 
-
-  const scrollToSection = useCallback((sectionNumber: number) => {
-    window.scrollTo({
-      top: containerHeight * (sectionNumber - 1),
-      behavior: 'smooth'
-    });
-  }, [containerHeight]);
-
+  // Measure the container rather than asking the window: the container is
+  // exactly three sections tall, so a third of it is a section by construction
+  // and cannot drift from what CSS actually laid out. `window.innerHeight` can
+  // and does — a mobile URL bar sliding away changes it while leaving `vh`, and
+  // so the layout, untouched. Reading it once at mount then snapping against it
+  // is what drags the sections off their marks by the height of that bar.
   useEffect(() => {
-    setContainerHeight(window.innerHeight);
+    const measure = () => {
+      const container = containerRef.current;
+      if (container) setSectionHeight(container.getBoundingClientRect().height / 3);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, []);
 
   useEffect(() => {
+    if (sectionHeight === 0) return;
+
+    // Resync to wherever the page actually is: a reload can restore a scroll
+    // position, and this effect re-runs whenever the geometry or the keyboard
+    // changes. Without this the clamp below would measure from a stale act.
+    parkedRef.current = Math.round(window.scrollY / sectionHeight);
+
     let timeoutId: NodeJS.Timeout;
+    // A touch scroll hands off to momentum the browser owns. Firing a smooth
+    // scroll into that inertia makes the two fight — the stutter phones see —
+    // so hold off until the finger has left and the page has coasted to a stop.
+    let touching = false;
 
-    if (containerHeight === 0) return;
+    const snap = () => {
+      if (touching) return;
+      // An open keyboard means the chat is open over the page, and that opening
+      // it can itself scroll the page. Hauling the page to a section boundary
+      // out from under someone mid-sentence is motion nobody asked for.
+      if (keyboardInset > 0) return;
 
-    const handleScroll = () => {
-      clearTimeout(timeoutId);
+      // A flick carries the page under its own momentum, and by the time it has
+      // coasted to a stop it can be a whole act past where it started. Rounding
+      // to the nearest act then honours the overshoot, and Experience — being
+      // the middle act — is the only one that can be passed over entirely, in
+      // either direction. So a settle advances by one act at most: the page
+      // catches you at each in turn, and reaching Projects from the hero is two
+      // gestures rather than one hard flick.
+      const parked = parkedRef.current;
+      const nearest = Math.round(window.scrollY / sectionHeight);
+      const index = Math.min(Math.max(nearest, parked - 1), parked + 1);
+      const act = Math.min(Math.max(index, 0), SECTION_COUNT - 1);
+      parkedRef.current = act;
 
-      timeoutId = setTimeout(() => {
-        const scrollPosition = window.scrollY;
-        const sectionNumber = Math.round(scrollPosition / containerHeight) + 1;
-        scrollToSection(sectionNumber);
-      }, 100); // Adjust this delay as needed
+      const target = sectionHeight * act;
+      // Arriving fires more scroll events. Without this the page schedules yet
+      // another scroll to the spot it is already sitting on, which on iOS lands
+      // in the middle of the next gesture.
+      if (Math.abs(window.scrollY - target) < 1) return;
+      window.scrollTo({ top: target, behavior: reduceMotion ? 'auto' : 'smooth' });
     };
 
-    window.addEventListener('scroll', handleScroll);
+    const settle = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(snap, 120);
+    };
+
+    const onTouchStart = () => {
+      touching = true;
+      clearTimeout(timeoutId);
+    };
+
+    const onTouchEnd = () => {
+      touching = false;
+      settle();
+    };
+
+    window.addEventListener('scroll', settle, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+    // The geometry can change under a page that is standing still — a rotation,
+    // or a keyboard folding away after it pushed things around. Both leave the
+    // acts resting half-and-half with no scroll event coming to tidy them up.
+    settle();
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', settle);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
       clearTimeout(timeoutId);
     };
-  }, [containerHeight, scrollToSection])
+  }, [sectionHeight, reduceMotion, keyboardInset])
 
   return (
+    // Two viewport units, on purpose. `vh` is the one a mobile URL bar cannot
+    // move, so it owns the scroll distance and where each act is parked — the
+    // numbers the snap has to agree with. The acts themselves are sized in
+    // `svh`, the height that is on screen even with the bar showing, so a
+    // section is never taller than the window it has to fit in.
     <div ref={containerRef} className="h-[300vh] w-full">
-      
+
       <PortfolioNavBar />
       {/* Section 1 */}
-      <div ref={section1Ref} className="fixed top-0 left-0 w-full h-screen grid grid-cols-1 md:grid-cols-5  md:items-center md:justify-center p-4 text-white z-10">
+      <div ref={section1Ref} className="fixed top-0 left-0 w-full h-[100svh] grid grid-cols-1 md:grid-cols-5  md:items-center md:justify-center p-4 text-white z-10">
         <div className="col-span-2 flex flex-col h-full justify-center md:py-16">
           <motion.div
             style={{ opacity: text1Opacity, y: text1Y }}
@@ -126,7 +197,7 @@ const MainSections = () => {
       {/* Section 2 */}
       <motion.div
         style={{ y: y2 }}
-        className="fixed top-full left-0 w-full h-full p-4 z-20"
+        className="fixed top-[100vh] left-0 w-full h-[100svh] p-4 z-20"
       >
         <div ref={section2Ref} className="h-full w-full text-white">
           <motion.div style={{ opacity: text2Opacity, y: text2Y }}
@@ -142,7 +213,7 @@ const MainSections = () => {
       {/* Section 3 */}
       <motion.div
         style={{ y: y3 }}
-        className="fixed top-full left-0 w-full h-full flex flex-col p-4 z-30"
+        className="fixed top-[100vh] left-0 w-full h-[100svh] flex flex-col p-4 z-30"
       >
         <div ref={section3Ref} className="grow h-full w-full flex flex-col text-white">
           <motion.div

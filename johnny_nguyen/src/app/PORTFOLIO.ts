@@ -2,11 +2,13 @@
 import { v4 as uuid } from 'uuid';
 const PORTFOLIO = {
   name: "Duc (Johnny) Nguyen",
+  preferred_name: "Johnny",
   role: "Software Engineer",
+  pronouns: 'him',
   description: "A product-focused software engineer, passionate about building scalable and efficient software solutions. Strong focus on scalable architecture and clean, testable code, with experience owning features end to end from system design to deployment.",
   techs: ["Typescript", "AWS", "Node.js", ".NET Core", "PostgreSQL", "MySQL"],
   email: 'cuongdn2001@gmail.com',
-  resume_link: 'https://drive.google.com/file/d/1D_E7dgsFJ0QsSITeFXiBe83FADG9Xslm/view?usp=sharing'
+  resume_link: 'https://drive.google.com/file/d/1nylzdAasJc48p0r7q6GyOYGKdvOIeI6n/view?usp=sharing'
 }
 
 const PROFILE_LINKS = [
@@ -25,23 +27,23 @@ const PROFILE_LINKS = [
 const CHAT_NAME = 'Firefly';
 
 const CHAT = {
-  /** The firefly hosts the chat. It talks about Johnny, never as Johnny. */
+  /** The firefly hosts the chat. It talks about you, never as first person. */
   name: CHAT_NAME,
-  greeting: "Hi — I hang around this page. Ask me anything about Johnny.",
+  greeting: `Hi — I hang around this page. Ask me anything about ${PORTFOLIO.preferred_name}.`,
   chips: [
-    { label: "What's he working on?", question: "What is Johnny working on right now?" },
-    { label: 'His experience', question: "What's Johnny's experience?" },
-    { label: 'Resume', question: 'Can I see his resume?' },
+    { label: `Who is ${PORTFOLIO.preferred_name}?`, question: `Who is ${PORTFOLIO.preferred_name}? Tell me about ${PORTFOLIO.pronouns}.` },
+    { label: 'His experience', question: `What's ${PORTFOLIO.preferred_name}'s experience?` },
+    { label: 'Resume', question: `Can I see ${PORTFOLIO.preferred_name}'s resume?` },
   ],
-  placeholder: 'Ask about Johnny…',
+  placeholder: `Ask about ${PORTFOLIO.preferred_name}…`,
   /** Quiet nudge beside the beacon while the Experience section is in view. */
   hintLabel: 'Ask me',
   privacyNote: 'This chat stays in your browser.',
   clearLabel: 'Clear',
   /** Shown client-side when the request never made it back at all (offline, parse failure). */
-  offlineMessage: `Can't reach my brain from here. Johnny's inbox always works though — ${PORTFOLIO.email}.`,
+  offlineMessage: `Can't reach my brain from here. ${PORTFOLIO.preferred_name}'s inbox always works though — ${PORTFOLIO.email}.`,
   /** Beacon aria-label when the panel is closed. */
-  openLabel: `Ask ${CHAT_NAME} about Johnny`,
+  openLabel: `Ask ${CHAT_NAME} about ${PORTFOLIO.preferred_name}`,
   /** Beacon and panel-header aria-label when the panel is open. */
   closeLabel: 'Close chat',
   /** Dialog aria-label for the panel itself. */
@@ -62,7 +64,7 @@ const JobTimelineData: JobTimeLineItem[] = [
   {
     year: 'Mar 2025 - Present', 
     title: 'Software Engineer', 
-    content: "Worked on enterprise systems across various industry sectors, including fiance, advertising compliance, NDIS and insurance. Owned the development of new features, infrastructure, and solutions end-to-end.",
+    content: "Worked on enterprise systems across various industry sectors, including finance, advertising compliance, NDIS and insurance. Owned the development of new features, infrastructure, and solutions end-to-end.",
     axisLabel: 'Now',
     company: 'iMSX',
     link: 'https://imsx.com.au/',
@@ -117,6 +119,14 @@ const PROJECTS: Project[] = [
   },
   {
     id: uuid(),
+    title: 'Water Quality Monitoring Platform',
+    image: 'https://raw.githubusercontent.com/johnnycuongn/Portfolio/master/Public/masked_events_data_tab.png',
+    github: 'https://qmdcl-water-project-staging.web.app/',
+    description: 'Allow river rangers to collect water quality data in their tablets, and sync the data with site managers',
+    stacks: ["React", "Chart.js", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
+  },
+  {
+    id: uuid(),
     title: 'Smart Inventory Management System',
     github: 'https://github.com/johnnycuongn/Inventory-Management-Sytem',
     image: 'https://raw.githubusercontent.com/johnnycuongn/Inventory-Management-Sytem/main/github_resources/poster.png',
@@ -131,14 +141,6 @@ const PROJECTS: Project[] = [
     description: 'The Supplier Receipt Tracker is designed to streamline invoice management for businesses in Retail, Manufacturing, Construction, and Hospitality sectors. This intuitive platform helps users track both digital and physical invoices, providing a comprehensive dashboard to monitor financial health.',
     stacks: ["React", "Typescript", "Firebase", "Chart.js"]
   },
-  {
-    id: uuid(),
-    title: 'Water Quality Monitoring Platform',
-    image: 'https://raw.githubusercontent.com/johnnycuongn/Portfolio/master/Public/masked_events_data_tab.png',
-    github: 'https://qmdcl.org.au/services-queensland-murray-darling-catchment/',
-    description: 'Allow river rangers to collect water quality data in their tablets, and sync the data with site managers',
-    stacks: ["React", "Chart.js", "React Native", "Typescript", "Node.js", "Material UI", "Firebase"]
-  }
 ];
 
 export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT };

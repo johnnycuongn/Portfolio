@@ -3,7 +3,7 @@ import { FC, memo } from 'react';
 import Image from 'next/image';
 import { FiExternalLink } from "react-icons/fi";
 import { PROJECTS } from '../PORTFOLIO';
-import useDelayedLinkOpen from '@/utils/useDelayLinkOpen';
+import useDelayedLinkOpen, { canDelayOpen } from '@/utils/useDelayLinkOpen';
 
 interface ProjectCardProps {
   className?: string;
@@ -28,14 +28,13 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
   const { navigating, navigate } = useDelayedLinkOpen(200)
 
   const handleProjectClicked = async (e: React.MouseEvent) => {
+    // Leave the anchor to open the tab itself wherever the deferred open would
+    // be blocked or is pointless — see canDelayOpen.
+    if (!canDelayOpen(e, reduceMotion)) return;
+
     e.preventDefault()
 
     if (navigating) return;
-
-    if (reduceMotion) {
-      navigate(project.github || FALLBACK_LINK);
-      return;
-    }
 
     await controls.start({
       x: '100%',
@@ -64,6 +63,8 @@ const ProjectCard: FC<ProjectCardProps> = memo(({className, index, projectId}) =
         <div className="group/item relative flex h-full flex-col">
           <a
             href={project.github || FALLBACK_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={handleProjectClicked}
             onFocus={(e) => e.currentTarget.scrollIntoView({
               behavior: reduceMotion ? 'auto' : 'smooth',

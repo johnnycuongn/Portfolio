@@ -4,7 +4,7 @@ import { motion, useAnimation } from 'motion/react';
 import { FC, memo, RefObject } from 'react';
 import { FiExternalLink } from 'react-icons/fi';
 import { JobTimeLineItem } from '../PORTFOLIO';
-import useDelayedLinkOpen from '@/utils/useDelayLinkOpen';
+import useDelayedLinkOpen, { canDelayOpen } from '@/utils/useDelayLinkOpen';
 import { ViewMode } from '@/utils/useViewMode';
 
 interface TimelineCardProps {
@@ -29,13 +29,12 @@ const TimelineCard: FC<TimelineCardProps> = memo(({ job, className, dimmed, inde
   const { navigating, navigate } = useDelayedLinkOpen(200);
 
   const handleClick = async (e: React.MouseEvent) => {
+    // Leave the anchor to open the tab itself wherever the deferred open would
+    // be blocked or is pointless — see canDelayOpen.
+    if (!canDelayOpen(e, reduceMotion)) return;
+
     e.preventDefault();
     if (navigating) return;
-
-    if (reduceMotion) {
-      navigate(job.link);
-      return;
-    }
 
     await controls.start({
       x: '100%',
@@ -97,13 +96,15 @@ const TimelineCard: FC<TimelineCardProps> = memo(({ job, className, dimmed, inde
         (className ?? '') +
         ' rounded-lg bg-slate-800 shadow-lg hover:shadow-xl ' +
         (isLine
-          ? 'relative h-60 ' + (above ? 'self-start' : 'self-end')
+          ? 'relative h-[17rem] ' + (above ? 'self-start' : 'self-end')
           : 'overflow-hidden self-stretch')
       }
     >
       <div className="group/item relative flex h-full flex-col p-5">
         <a
           href={job.link}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={handleClick}
           onFocus={(e) => e.currentTarget.scrollIntoView({
             behavior: reduceMotion ? 'auto' : 'smooth',
@@ -129,7 +130,7 @@ const TimelineCard: FC<TimelineCardProps> = memo(({ job, className, dimmed, inde
 
         <p className={
           'mt-3 min-h-0 text-base leading-7 text-gray-300 transition-colors group-hover/item:text-white ' +
-          (isLine ? 'line-clamp-2' : 'line-clamp-6')
+          (isLine ? 'line-clamp-3' : 'line-clamp-6')
         }>
           {job.content}
         </p>
