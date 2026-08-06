@@ -7,6 +7,7 @@ import { RESUME } from '../PORTFOLIO';
 import { RESUME_PAGES } from '../_resume/pages';
 import useFocusTrap from '@/utils/useFocusTrap';
 import useResumeViewer from '@/utils/useResumeViewer';
+import useIsDesktop from '@/utils/useIsDesktop';
 
 export default function ResumeViewer() {
   const { isOpen, close } = useResumeViewer();
@@ -24,6 +25,17 @@ export default function ResumeViewer() {
   }, [isOpen]);
 
   const showFallback = failed || RESUME_PAGES.length === 0;
+
+  // Below md: the page is already full width and pinch-zoom handles the rest,
+  // so the toggle only exists on desktop — where fit-height is otherwise too
+  // small to read comfortably.
+  const isDesktop = useIsDesktop();
+  const [zoomed, setZoomed] = useState(false);
+  useEffect(() => {
+    if (!isOpen) setZoomed(false);
+  }, [isOpen]);
+
+  const canZoom = isDesktop && !showFallback;
 
   // Focus lands on the close button, and goes back to whatever opened the
   // viewer when it shuts — the nav button or the firefly's action.
@@ -114,7 +126,11 @@ export default function ResumeViewer() {
           <div className="flex min-h-full items-start justify-center p-2 md:items-center md:p-6">
             {/* The sheet stops the click that would otherwise close the dialog. */}
             <motion.div
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (canZoom) setZoomed((value) => !value);
+              }}
+              title={canZoom ? (zoomed ? RESUME.zoomOutLabel : RESUME.zoomInLabel) : undefined}
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 26, scale: 0.94, rotate: -1.4 }}
               animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1, rotate: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.97 }}
@@ -126,7 +142,9 @@ export default function ResumeViewer() {
                   ? 'none'
                   : '0 26px 64px rgba(0,0,0,0.65), 0 0 40px rgba(230,255,150,0.10)',
               }}
-              className="w-full space-y-3 md:w-auto"
+              className={`w-full space-y-3 md:w-auto ${
+                canZoom ? (zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in') : ''
+              }`}
             >
               {showFallback ? (
                 <div className="rounded-2xl bg-slate-800 px-6 py-8 text-center">
@@ -152,7 +170,9 @@ export default function ResumeViewer() {
                     alt={RESUME.pageAlt
                       .replace('{n}', String(index + 1))
                       .replace('{total}', String(total))}
-                    className="h-auto w-full bg-white md:h-[88dvh] md:w-auto"
+                    className={`h-auto w-full bg-white ${
+                      zoomed ? 'md:w-[min(92vw,820px)]' : 'md:h-[88dvh] md:w-auto'
+                    }`}
                   />
                 ))
               )}
