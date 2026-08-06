@@ -5,6 +5,7 @@ import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } fr
 import { CHAT } from '../PORTFOLIO';
 import ContactSendButton from './ContactSendButton';
 import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
+import useBodyScrollLock from '@/utils/useBodyScrollLock';
 import useChat from '@/utils/useChat';
 import useFocusTrap from '@/utils/useFocusTrap';
 import useKeyboardInset from '@/utils/useKeyboardInset';
@@ -119,12 +120,31 @@ export default function FireflyChat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listEndRef = useRef<HTMLDivElement>(null);
 
+  // The panel covers the page, but a `fixed` overlay does not stop the page
+  // scrolling underneath it — `overscroll-behavior` on the transcript only
+  // stops chaining from *inside* the list, and does nothing for a drag on the
+  // header, the input, or the strip of page still showing above an 85dvh
+  // sheet. On a fresh chat the transcript isn't even scrollable, so every drag
+  // went straight through to the page, which then snapped itself to the next
+  // section mid-conversation.
+  useBodyScrollLock(open);
+
   // Focus the input on open; hand focus back to the beacon on close. The ref guard
   // stops the initial render from stealing focus on page load.
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (open) inputRef.current?.focus({ preventScroll: true });
-    else if (wasOpen.current) beaconRef.current?.focus({ preventScroll: true });
+    // Taking focus summons the on-screen keyboard, which on a phone covers half
+    // the panel before the greeting has been read — and the chips, which are
+    // the whole invitation to say something, go with it. Where there's a real
+    // pointer, focus costs the reader nothing and saves them a click. Pointer
+    // capability rather than width: a tablet at 900px still has a soft keyboard.
+    if (open) {
+      if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        inputRef.current?.focus({ preventScroll: true });
+      }
+    } else if (wasOpen.current) {
+      beaconRef.current?.focus({ preventScroll: true });
+    }
     wasOpen.current = open;
   }, [open]);
 
@@ -367,7 +387,15 @@ export default function FireflyChat() {
             </div>
 
             <form
-              className="shrink-0 px-4 pb-3 pt-1"
+              className="shrink-0 px-4 pt-1"
+              // `bottom-0` anchors the sheet to the layout viewport, which on
+              // iOS runs underneath Safari's floating URL bar and the home
+              // indicator — so 12px of padding left the input and the privacy
+              // note sitting behind both. The inset is 0 on desktop and while
+              // the keyboard is up (the keyboard is the bottom edge then, and
+              // `keyboardInset` has already lifted the panel), so the 0.75rem
+              // floor is what applies everywhere else.
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
               onSubmit={(event) => {
                 event.preventDefault();
                 submit(draft);
