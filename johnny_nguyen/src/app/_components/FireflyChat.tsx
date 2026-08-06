@@ -149,6 +149,29 @@ export default function FireflyChat() {
     scrolledSinceOpen.current = true;
   }, [messages, isStreaming, reduceMotion, open, keyboardInset]);
 
+  // Asking to see the resume opens the resume. The action button stays rendered
+  // regardless, so dismissing the viewer leaves a way back and the answer still
+  // reads correctly in the transcript afterwards.
+  //
+  // Keyed on the streaming true→false transition rather than on the message
+  // list: a restored transcript never streams, so a resume answer from last
+  // week cannot throw the viewer up on page load. The id set then stops a
+  // re-render from reopening what the visitor just dismissed.
+  const autoOpened = useRef<Set<string>>(new Set());
+  const wasStreaming = useRef(false);
+  useEffect(() => {
+    const settled = wasStreaming.current && !isStreaming;
+    wasStreaming.current = isStreaming;
+    if (!settled) return;
+
+    const last = messages[messages.length - 1];
+    if (last?.role !== 'firefly' || last.action?.opens !== 'resume') return;
+    if (autoOpened.current.has(last.id)) return;
+
+    autoOpened.current.add(last.id);
+    openResume();
+  }, [messages, isStreaming, openResume]);
+
   const trapTab = useFocusTrap(panelRef);
 
   // Esc closes. Tab cycles within the panel rather than escaping to the page.
