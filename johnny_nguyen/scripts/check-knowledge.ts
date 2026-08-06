@@ -15,7 +15,12 @@ for (const project of PROJECTS) {
   assert.ok(prompt.includes(project.title), `prompt missing project "${project.title}"`);
 }
 assert.ok(prompt.includes(PORTFOLIO.email));
-assert.ok(prompt.includes(PORTFOLIO.resume_link));
+// The model must know the resume is a thing on the page, not a URL it can hand
+// out — there is no longer a link for it to give.
+assert.ok(
+  prompt.includes('The resume opens on this page'),
+  'prompt must tell the model the resume opens in place',
+);
 
 // The tone rules survived. All ten banned phrases must appear verbatim —
 // this is the full mandated list, not a sample of it.

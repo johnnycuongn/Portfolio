@@ -55,7 +55,7 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
     id: 'resume',
     triggers: ['resume', 'resumes', 'cv', 'pdf', 'download'],
     answer: 'Full resume is one click away.',
-    action: { label: 'Open resume', href: PORTFOLIO.resume_link },
+    action: { label: 'Open resume', opens: 'resume' },
   },
   {
     id: 'contact',

@@ -32,8 +32,9 @@ for (const q of ['What is the capital of France?', 'zxcvbnm', '']) {
 // Punctuation and casing do not matter.
 assert.equal(matchFallback('RESUME!!!').id, 'resume');
 
-// The resume entry carries a link.
-assert.ok(matchFallback('resume').action?.href.startsWith('https://'));
+// The resume entry opens the on-page viewer rather than navigating away.
+assert.equal(matchFallback('resume').action?.opens, 'resume');
+assert.equal(matchFallback('resume').action?.href, undefined, 'the resume answer must not carry a link');
 
 // The catch-all points at a real email.
 assert.ok(CATCH_ALL.answer.includes('@'), 'catch-all should offer the email');

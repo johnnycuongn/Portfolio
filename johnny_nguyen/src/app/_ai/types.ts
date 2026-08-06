@@ -7,7 +7,10 @@ export type ChatRole = 'user' | 'firefly';
 
 export interface ChatAction {
   label: string;
-  href: string;
+  /** External destination. Mutually exclusive with `opens`. */
+  href?: string;
+  /** In-page target this button opens instead of navigating anywhere. */
+  opens?: 'resume';
 }
 
 export interface ChatMessage {

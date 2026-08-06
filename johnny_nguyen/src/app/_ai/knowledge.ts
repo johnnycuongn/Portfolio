@@ -17,7 +17,7 @@ export function portfolioFacts(): string {
     `Name: ${PORTFOLIO.name}. Role: ${PORTFOLIO.role}. ${PORTFOLIO.description}.`,
     `Main technologies: ${PORTFOLIO.techs.join(', ')}.`,
     `Email: ${PORTFOLIO.email}`,
-    `Resume: ${PORTFOLIO.resume_link}`,
+    'The resume opens on this page — the Resume button in the top-right corner brings it up, and the dialog offers a PDF download. There is no link to hand out.',
     '',
     'Work history (most recent first):',
     jobs,

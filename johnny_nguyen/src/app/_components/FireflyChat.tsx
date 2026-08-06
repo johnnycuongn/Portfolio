@@ -7,6 +7,7 @@ import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useChat from '@/utils/useChat';
 import useFocusTrap from '@/utils/useFocusTrap';
 import useKeyboardInset from '@/utils/useKeyboardInset';
+import useResumeViewer from '@/utils/useResumeViewer';
 
 const GLOW = 'radial-gradient(circle, rgba(230,255,150,1) 0%, rgba(230,255,150,0.8) 25%, rgba(230,255,150,0.4) 50%, rgba(230,255,150,0) 75%)';
 
@@ -41,6 +42,7 @@ export default function FireflyChat() {
   const { messages, isStreaming, hasHistory, send, clear } = useChat();
   const reduceMotion = useReducedMotion();
   const { inset: keyboardInset, visibleHeight } = useKeyboardInset();
+  const { isOpen: resumeOpen, open: openResume } = useResumeViewer();
 
   // The Experience section is the page's second full-viewport act. `page.tsx`
   // decides the active section by rounding scrollY against the viewport height;
@@ -178,6 +180,8 @@ export default function FireflyChat() {
           the firefly instead of being left behind at a fixed offset. */}
       <motion.div
         style={{ x, y }}
+        animate={{ opacity: resumeOpen ? 0 : 1 }}
+        transition={{ duration: 0.2 }}
         className="fixed bottom-6 right-6 z-[200] flex h-11 items-center"
       >
         {/* Decorative reinforcement of the beacon's own aria-label, so it is
@@ -310,16 +314,25 @@ export default function FireflyChat() {
                     </span>
                     <div className="min-w-0">
                       <p className="break-words text-sm leading-6 text-gray-200">{message.text}</p>
-                      {message.action && (
-                        <a
-                          href={message.action.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 inline-block break-all text-xs text-teal-300 hover:underline"
-                        >
-                          {message.action.label} →
-                        </a>
-                      )}
+                      {message.action &&
+                        (message.action.opens === 'resume' ? (
+                          <button
+                            type="button"
+                            onClick={openResume}
+                            className="mt-1 inline-block text-xs text-teal-300 hover:underline"
+                          >
+                            {message.action.label} →
+                          </button>
+                        ) : (
+                          <a
+                            href={message.action.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block break-all text-xs text-teal-300 hover:underline"
+                          >
+                            {message.action.label} →
+                          </a>
+                        ))}
                     </div>
                   </div>
                 ),

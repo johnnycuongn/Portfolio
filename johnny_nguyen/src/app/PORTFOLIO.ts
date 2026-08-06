@@ -5,10 +5,9 @@ const PORTFOLIO = {
   preferred_name: "Johnny",
   role: "Software Engineer",
   pronouns: 'him',
-  description: "A product-focused software engineer, passionate about building scalable and efficient software solutions. Strong focus on scalable architecture and clean, testable code, with experience owning features end to end from system design to deployment.",
+  description: "A product-focused software engineer, passionate about building scalable and efficient software solutions. Strong focus on scalable architecture and clean, testable code, with experience owning features end to end from infrastructure to deployment.",
   techs: ["Typescript", "AWS", "Node.js", ".NET Core", "PostgreSQL", "MySQL"],
-  email: 'cuongdn2001@gmail.com',
-  resume_link: 'https://drive.google.com/file/d/1nylzdAasJc48p0r7q6GyOYGKdvOIeI6n/view?usp=sharing'
+  email: 'cuongdn2001@gmail.com'
 }
 
 /**
