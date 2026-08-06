@@ -168,9 +168,10 @@ the reverse.
 
 - **`src/app/_ai/sentinel.ts`** — pure, no I/O, and the piece worth getting right:
   `splitSentinel(text)` returns `{ visible, command: null | { kind: 'contact', draft } | { kind: 'resume' } }`,
-  plus `heldPrefixLength(text)` for the streaming hold-back, and `validateDraft(draft)`.
-- **`src/app/_contact/types.ts`** — `ContactDraft { name, email, message }` and the field caps,
-  imported by both client and server so they cannot drift. Mirrors `_ai/types.ts`.
+  plus `heldPrefixLength(text)` for the streaming hold-back.
+- **`src/app/_contact/draft.ts`** — `ContactDraft { name, email, message }`, the field caps, and
+  `validateDraft`. Type and validation live together because they change together, and it imports
+  nothing, which is what keeps the dependency direction clean.
 - **`src/app/_contact/mailer.ts`** — `isMailerConfigured()` and `sendContactEmail(draft)`. One
   `fetch` to Resend, mirroring `_ai/provider.ts`. Swapping providers means rewriting this file only.
 - **`src/app/api/contact/route.ts`** — validate, rate-limit, send. Returns `{ ok: boolean }`.
@@ -179,7 +180,7 @@ the reverse.
 
 **Naming**: `_ai/types.ts` already exports `MAX_MESSAGE_CHARS` (500, the chat input cap). The
 contact caps must not reuse it — they are `MAX_CONTACT_NAME_CHARS`, `MAX_CONTACT_EMAIL_CHARS`,
-`MAX_CONTACT_MESSAGE_CHARS` in `_contact/types.ts`.
+`MAX_CONTACT_MESSAGE_CHARS` in `_contact/draft.ts`.
 
 ### Changed files
 
@@ -272,7 +273,7 @@ All strings go in `CHAT` in `PORTFOLIO.ts`:
 |---|---|
 | `sendLabel` | `Send it` |
 | `sendingLabel` | `Sending…` |
-| `sentLabel` | `Sent — he'll see it` |
+| `sentLabel` | `` `Sent — ${PORTFOLIO.preferred_name} will see it` `` |
 | `sendFailedLabel` | `Email him directly` |
 | `resumeLabel` | `Open resume` |
 
