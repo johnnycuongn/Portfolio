@@ -37,6 +37,42 @@ export default function ResumeViewer() {
 
   const canZoom = isDesktop && !showFallback;
 
+  // The ✕ and the download pill arrive a beat after the sheet lands, step back
+  // while you read, and return the moment you move. The stepping back only
+  // happens where there is a pointer to move: on a touch screen faded chrome
+  // would never come back on its own.
+  const [chromeVisible, setChromeVisible] = useState(false);
+  useEffect(() => {
+    if (!isOpen) {
+      setChromeVisible(false);
+      return;
+    }
+
+    const hasPointer = window.matchMedia('(hover: hover)').matches;
+    let idle: NodeJS.Timeout | undefined;
+
+    const wake = () => {
+      setChromeVisible(true);
+      if (!hasPointer) return;
+      clearTimeout(idle);
+      idle = setTimeout(() => setChromeVisible(false), 2500);
+    };
+
+    // Let the page land first.
+    const entrance = setTimeout(wake, 380);
+
+    window.addEventListener('pointermove', wake);
+    window.addEventListener('focusin', wake);
+    window.addEventListener('scroll', wake, { capture: true, passive: true });
+    return () => {
+      clearTimeout(entrance);
+      clearTimeout(idle);
+      window.removeEventListener('pointermove', wake);
+      window.removeEventListener('focusin', wake);
+      window.removeEventListener('scroll', wake, { capture: true });
+    };
+  }, [isOpen]);
+
   // Focus lands on the close button, and goes back to whatever opened the
   // viewer when it shuts — the nav button or the firefly's action.
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -186,8 +222,8 @@ export default function ResumeViewer() {
             onClick={close}
             aria-label={RESUME.closeLabel}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.38, duration: 0.3 }}
+            animate={{ opacity: chromeVisible ? 1 : 0 }}
+            transition={{ duration: chromeVisible ? 0.3 : 0.5 }}
             className="fixed right-4 top-4 text-xl leading-none text-gray-400 transition-colors hover:text-teal-300"
           >
             ✕
@@ -198,8 +234,8 @@ export default function ResumeViewer() {
             download
             onClick={(event) => event.stopPropagation()}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.38, duration: 0.3 }}
+            animate={{ opacity: chromeVisible ? 1 : 0 }}
+            transition={{ duration: chromeVisible ? 0.3 : 0.5 }}
             className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-teal-400/30 bg-slate-900/90 px-4 py-2 text-xs text-teal-300 transition-colors hover:bg-teal-400/20 md:left-auto md:right-6 md:translate-x-0 md:border-transparent md:bg-teal-400/10"
           >
             ↓ {RESUME.downloadLabel}
