@@ -61,12 +61,12 @@ const CHAT = {
     { label: `Who is ${PORTFOLIO.preferred_name}?`, question: `Who is ${PORTFOLIO.preferred_name}? Tell me about ${PORTFOLIO.pronouns}.` },
     { label: 'His experience', question: `What's ${PORTFOLIO.preferred_name}'s experience?` },
     { label: 'Resume', question: `Can I see ${PORTFOLIO.preferred_name}'s resume?` },
-    { label: 'Fun fact about Johnny', question: `Tell me a fun fact about ${PORTFOLIO.preferred_name}.` },
+    { label: `Fun fact about ${PORTFOLIO.preferred_name}`, question: `Tell me a fun fact about ${PORTFOLIO.preferred_name}.` },
   ],
   placeholder: `Ask about ${PORTFOLIO.preferred_name}…`,
   /** Quiet nudge beside the beacon while the Experience section is in view. */
   hintLabel: 'Ask me',
-  privacyNote: 'This chat stays in your browser.',
+  privacyNote: `This chat stays in your browser. ${PORTFOLIO.preferred_name} won't see it. Tell me to email him instead.`,
   clearLabel: 'Clear',
   /** Action label on a reply where Firefly has a complete message ready to send. */
   sendLabel: 'Send it',
