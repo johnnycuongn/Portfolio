@@ -12,6 +12,8 @@ import MouseAndCat from "./_components/MouseAndCat";
 import ProjectRail from "./_components/ProjectRail";
 import FireflyChat from "./_components/FireflyChat";
 import useKeyboardInset from "@/utils/useKeyboardInset";
+import ResumeViewer from "./_components/ResumeViewer";
+import useResumeViewer, { ResumeViewerProvider } from "@/utils/useResumeViewer";
 
 
 // Hero, Experience, Projects. The container is this many viewports tall and the
@@ -44,6 +46,7 @@ const MainSections = () => {
   const parkedRef = useRef(0);
   const reduceMotion = useReducedMotion();
   const { inset: keyboardInset } = useKeyboardInset();
+  const { isOpen: resumeOpen } = useResumeViewer();
 
   const { scrollY } = useScroll();
 
@@ -98,6 +101,11 @@ const MainSections = () => {
       // out from under someone mid-sentence is motion nobody asked for.
       if (keyboardInset > 0) return;
 
+      // The resume viewer parks the page under a scrim. Locking the body stops
+      // most scrolling, but iOS can still coast, and snapping the page under an
+      // open dialog would move it out from under the reader.
+      if (resumeOpen) return;
+
       // A flick carries the page under its own momentum, and by the time it has
       // coasted to a stop it can be a whole act past where it started. Rounding
       // to the nearest act then honours the overshoot, and Experience — being
@@ -151,7 +159,7 @@ const MainSections = () => {
       window.removeEventListener('touchcancel', onTouchEnd);
       clearTimeout(timeoutId);
     };
-  }, [sectionHeight, reduceMotion, keyboardInset])
+  }, [sectionHeight, reduceMotion, keyboardInset, resumeOpen])
 
   return (
     // Two viewport units, on purpose. `vh` is the one a mobile URL bar cannot
@@ -243,13 +251,25 @@ const MainSections = () => {
 
 export default function Home() {
   return (
+    <ResumeViewerProvider>
+      <HomeShell />
+    </ResumeViewerProvider>
+  );
+}
+
+// The viewer sits outside <main> so that marking the page inert — which is what
+// keeps a screen reader out of the dimmed page behind — cannot reach the dialog
+// itself. React 19 takes `inert` as a plain boolean prop.
+function HomeShell() {
+  const { isOpen } = useResumeViewer();
+  return (
     <div className="">
-      <main className="bg-slate-900">
+      <main className="bg-slate-900" inert={isOpen}>
         <MouseAndCat />
         <FireflyChat />
         <MainSections />
       </main>
-   
+      <ResumeViewer />
     </div>
   );
 }

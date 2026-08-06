@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, FC } from 'react';
 import { AnimatePresence, motion, useAnimation, useReducedMotion } from 'motion/react';
 import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
-import { PORTFOLIO } from '../PORTFOLIO';
-import openInNewTab from '@/utils/openInNewTab';
+import { PORTFOLIO, RESUME } from '../PORTFOLIO';
+import useResumeViewer from '@/utils/useResumeViewer';
 
 interface TabItemProps {
   item: string;
@@ -46,7 +46,8 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
     clearTimeout(collapseTimer.current);
   }, []);
 
-  const handleResumeClick = () => openInNewTab(PORTFOLIO.resume_link);
+  const { open: openResume } = useResumeViewer();
+  const handleResumeClick = () => openResume();
 
   const handleContactClick = () => {
     navigator.clipboard?.writeText(PORTFOLIO.email).catch(() => {});
@@ -107,7 +108,8 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
       >
         {item === 'Resume' ? (
           <button
-            title="Open my resume in a new tab"
+            title={RESUME.navTitle}
+            aria-haspopup="dialog"
             className="px-4 py-2 cursor-pointer"
           >
             {item}
