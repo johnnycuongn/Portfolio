@@ -1,7 +1,14 @@
 import { matchFallback } from '../../_ai/fallback';
 import { limiter } from '../../_ai/limits';
 import { isProviderConfigured, streamCompletion } from '../../_ai/provider';
-import { MAX_HISTORY, MAX_MESSAGE_CHARS, type ChatMessage } from '../../_ai/types';
+import { heldPrefixLength, splitSentinel } from '../../_ai/sentinel';
+import {
+  MAX_HISTORY,
+  MAX_MESSAGE_CHARS,
+  type ChatAction,
+  type ChatMessage,
+} from '../../_ai/types';
+import { CHAT } from '../../PORTFOLIO';
 
 // fs is used by the knowledge module in a later task, and Node is required for it.
 export const runtime = 'nodejs';
@@ -34,6 +41,16 @@ function fallbackResponse(question: string): Response {
 function clientIp(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');
   return forwarded?.split(',')[0]?.trim() || 'unknown';
+}
+
+/**
+ * Labels come from PORTFOLIO.ts, never from the model — the model chooses
+ * *whether* there is an action, never what the button says.
+ */
+function actionFor(command: ReturnType<typeof splitSentinel>['command']): ChatAction | null {
+  if (!command) return null;
+  if (command.kind === 'resume') return { label: CHAT.resumeLabel, opens: 'resume' };
+  return { label: CHAT.sendLabel, sends: command.draft };
 }
 
 /**
@@ -71,16 +88,39 @@ function modelResponse(history: ChatMessage[], question: string): Response {
       };
 
       try {
+        // Text the model has produced but that we are not ready to release: it
+        // is either a sentinel or still a viable prefix of one. Everything
+        // ahead of it has been written already and can never retroactively
+        // become part of a sentinel, so this stays small.
+        let pending = '';
+
         for await (const text of streamCompletion(history, controllerAbort.signal)) {
           if (!text) continue;
-          produced = true;
-          write({ type: 'token', text });
+          pending += text;
+
+          const held = heldPrefixLength(pending);
+          const release = pending.slice(0, pending.length - held);
+          pending = pending.slice(pending.length - held);
+
+          if (release) {
+            produced = true;
+            write({ type: 'token', text: release });
+          }
         }
-        if (produced) {
-          write({ type: 'done', fallback: false, action: null });
+
+        // Whatever is left is the sentinel, a partial one, or trailing
+        // whitespace. Only now can it be parsed.
+        const { visible, command } = splitSentinel(pending);
+        if (visible) {
+          produced = true;
+          write({ type: 'token', text: visible });
+        }
+
+        // An action counts as output: a reply that is *only* a sentinel is a
+        // successful turn, not the empty-bubble case the fallback exists for.
+        if (produced || command) {
+          write({ type: 'done', fallback: false, action: actionFor(command) });
         } else {
-          // Finished without error but never yielded any text — same
-          // visitor-facing outcome as a failure before the first token.
           sendFallback('');
         }
       } catch (err) {
