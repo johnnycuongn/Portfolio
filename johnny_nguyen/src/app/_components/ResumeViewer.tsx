@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { RESUME } from '../PORTFOLIO';
 import { RESUME_PAGES } from '../_resume/pages';
+import useBodyScrollLock from '@/utils/useBodyScrollLock';
 import useFocusTrap from '@/utils/useFocusTrap';
 import useResumeViewer from '@/utils/useResumeViewer';
 import useIsDesktop from '@/utils/useIsDesktop';
@@ -88,45 +89,10 @@ export default function ResumeViewer() {
 
   // `overflow: hidden` alone is not enough: it stops a scrollbar or a click-drag,
   // but a wheel/trackpad gesture can still move `window.scrollY` on the document
-  // underneath — the CSS only hides the scrollbar, it doesn't universally block
-  // every input path that produces a scroll. Pinning the body in place with
-  // `position: fixed` at its current offset is the one technique that holds
-  // regardless of how the scroll was generated, which is why body-scroll-lock
-  // libraries all converge on it. `top` carries the offset so the pin doesn't
-  // itself jump the page, and closing restores the exact scrollY rather than
-  // trusting the browser to have kept it.
-  useEffect(() => {
-    if (!isOpen) return;
-    const root = document.documentElement;
-    const scrollY = window.scrollY;
-    const body = document.body;
-    const previous = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-      overflow: body.style.overflow,
-      rootOverflow: root.style.overflow,
-    };
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    body.style.overflow = 'hidden';
-    root.style.overflow = 'hidden';
-    return () => {
-      body.style.position = previous.position;
-      body.style.top = previous.top;
-      body.style.left = previous.left;
-      body.style.right = previous.right;
-      body.style.width = previous.width;
-      body.style.overflow = previous.overflow;
-      root.style.overflow = previous.rootOverflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, [isOpen]);
+  // underneath. The shared hook owns the technique and the refcount — the chat
+  // can open this viewer, so both are locked at once and only one of them may
+  // snapshot and restore the page's styles.
+  useBodyScrollLock(isOpen);
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {

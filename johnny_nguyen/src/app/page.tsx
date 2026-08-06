@@ -12,6 +12,7 @@ import MouseAndCat from "./_components/MouseAndCat";
 import ProjectRail from "./_components/ProjectRail";
 import FireflyChat from "./_components/FireflyChat";
 import useKeyboardInset from "@/utils/useKeyboardInset";
+import { isBodyScrollLocked } from "@/utils/useBodyScrollLock";
 import ResumeViewer from "./_components/ResumeViewer";
 import useResumeViewer, { ResumeViewerProvider } from "@/utils/useResumeViewer";
 
@@ -101,10 +102,12 @@ const MainSections = () => {
       // out from under someone mid-sentence is motion nobody asked for.
       if (keyboardInset > 0) return;
 
-      // The resume viewer parks the page under a scrim. Locking the body stops
-      // most scrolling, but iOS can still coast, and snapping the page under an
-      // open dialog would move it out from under the reader.
-      if (resumeOpen) return;
+      // An open overlay — the resume viewer, or the chat — parks the page under
+      // it. Locking the body stops most scrolling, but iOS can still coast, and
+      // the lock and unlock each emit a scroll of their own as the page pins
+      // and un-pins. Snapping on those would move the page out from under the
+      // reader, or leave `parkedRef` pointing at an act nobody is on.
+      if (isBodyScrollLocked()) return;
 
       // A flick carries the page under its own momentum, and by the time it has
       // coasted to a stop it can be a whole act past where it started. Rounding
@@ -159,6 +162,11 @@ const MainSections = () => {
       window.removeEventListener('touchcancel', onTouchEnd);
       clearTimeout(timeoutId);
     };
+    // `resumeOpen` is a dependency but not read in the body: the guard above
+    // asks the lock directly. It stays because closing the viewer has to re-run
+    // this effect, whose first act is resyncing `parkedRef` to where the page
+    // actually ended up. The chat needs no equivalent — it locks and unlocks
+    // around the same scroll offset, so the parked act cannot have moved.
   }, [sectionHeight, reduceMotion, keyboardInset, resumeOpen])
 
   return (
