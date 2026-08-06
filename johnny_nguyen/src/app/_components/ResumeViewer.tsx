@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { RESUME } from '../PORTFOLIO';
@@ -15,6 +15,15 @@ export default function ResumeViewer() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const trapTab = useFocusTrap(dialogRef);
+
+  // A page that will not load must not leave a blank white rectangle behind.
+  // Reset on close so a transient failure does not stick for the session.
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!isOpen) setFailed(false);
+  }, [isOpen]);
+
+  const showFallback = failed || RESUME_PAGES.length === 0;
 
   // Focus lands on the close button, and goes back to whatever opened the
   // viewer when it shuts — the nav button or the firefly's action.
@@ -112,22 +121,41 @@ export default function ResumeViewer() {
               transition={
                 reduceMotion ? { duration: 0.2 } : { type: 'spring', stiffness: 300, damping: 26 }
               }
-              style={{ boxShadow: '0 26px 64px rgba(0,0,0,0.65), 0 0 40px rgba(230,255,150,0.10)' }}
+              style={{
+                boxShadow: showFallback
+                  ? 'none'
+                  : '0 26px 64px rgba(0,0,0,0.65), 0 0 40px rgba(230,255,150,0.10)',
+              }}
               className="w-full space-y-3 md:w-auto"
             >
-              {RESUME_PAGES.map((page, index) => (
-                <Image
-                  key={page.src}
-                  src={page.src}
-                  width={page.width}
-                  height={page.height}
-                  priority={index === 0}
-                  alt={RESUME.pageAlt
-                    .replace('{n}', String(index + 1))
-                    .replace('{total}', String(total))}
-                  className="h-auto w-full bg-white md:h-[88dvh] md:w-auto"
-                />
-              ))}
+              {showFallback ? (
+                <div className="rounded-2xl bg-slate-800 px-6 py-8 text-center">
+                  <p className="text-sm leading-6 text-gray-300">{RESUME.errorMessage}</p>
+                  <a
+                    href={RESUME.pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-block rounded-full bg-teal-400/10 px-4 py-2 text-xs text-teal-300 transition-colors hover:bg-teal-400/20"
+                  >
+                    {RESUME.downloadLabel}
+                  </a>
+                </div>
+              ) : (
+                RESUME_PAGES.map((page, index) => (
+                  <Image
+                    key={page.src}
+                    src={page.src}
+                    width={page.width}
+                    height={page.height}
+                    priority={index === 0}
+                    onError={() => setFailed(true)}
+                    alt={RESUME.pageAlt
+                      .replace('{n}', String(index + 1))
+                      .replace('{total}', String(total))}
+                    className="h-auto w-full bg-white md:h-[88dvh] md:w-auto"
+                  />
+                ))
+              )}
             </motion.div>
           </div>
 
