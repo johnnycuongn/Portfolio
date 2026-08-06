@@ -58,6 +58,16 @@ const CHAT = {
   hintLabel: 'Ask me',
   privacyNote: 'This chat stays in your browser.',
   clearLabel: 'Clear',
+  /** Action label on a reply where Firefly has a complete message ready to send. */
+  sendLabel: 'Send it',
+  /** Replaces `sendLabel` while the POST to /api/contact is in flight. */
+  sendingLabel: 'Sending…',
+  /** Terminal success state. Deliberately not a button — there is nothing left to press. */
+  sentLabel: `Sent — ${PORTFOLIO.preferred_name} will see it`,
+  /** Every send failure lands here: the visitor gets the mailto they would have had anyway. */
+  sendFailedLabel: 'Email him directly',
+  /** Action label on a reply that opens the resume viewer. */
+  resumeLabel: 'Open resume',
   /** Shown client-side when the request never made it back at all (offline, parse failure). */
   offlineMessage: `Can't reach my brain from here. ${PORTFOLIO.preferred_name}'s inbox always works though — ${PORTFOLIO.email}.`,
   /** Beacon aria-label when the panel is closed. */

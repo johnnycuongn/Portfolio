@@ -1,5 +1,5 @@
 import type { ChatAction } from './types';
-import { PORTFOLIO, TimelineData, PROJECTS } from '../PORTFOLIO';
+import { PORTFOLIO, TimelineData, PROJECTS, CHAT } from '../PORTFOLIO';
 
 export interface FallbackAnswer {
   id: string;
@@ -55,7 +55,7 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
     id: 'resume',
     triggers: ['resume', 'resumes', 'cv', 'pdf', 'download'],
     answer: 'Full resume is one click away.',
-    action: { label: 'Open resume', opens: 'resume' },
+    action: { label: CHAT.resumeLabel, opens: 'resume' },
   },
   {
     id: 'contact',

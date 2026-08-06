@@ -19,5 +19,10 @@ assert.ok(CHAT.closeLabel.length > 0, 'close aria-label must not be empty');
 assert.ok(CHAT.dialogLabel.length > 0, 'panel dialog aria-label must not be empty');
 assert.ok(CHAT.hintLabel.length > 0, 'beacon hint label must not be empty');
 assert.ok(CHAT.hintLabel.length < 20, 'beacon hint sits beside the firefly — it has to stay short');
+assert.ok(CHAT.sendLabel.length > 0, 'send action label must not be empty');
+assert.ok(CHAT.sendingLabel.length > 0, 'sending label must not be empty');
+assert.ok(CHAT.sentLabel.length > 0, 'sent label must not be empty');
+assert.ok(CHAT.sendFailedLabel.length > 0, 'send-failed label must not be empty');
+assert.ok(CHAT.resumeLabel.length > 0, 'resume action label must not be empty');
 
 console.log('check-content: ok');
