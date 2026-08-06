@@ -73,12 +73,19 @@ assert.equal(splitSentinel('x\n[[CONTACT bad]]\n[[RESUME]]').command, null);
 assert.equal(heldPrefixLength('He works at iMSX.'), 0);
 
 // A complete sentinel has begun: hold from '[[' to the end.
-assert.equal(heldPrefixLength('Done.\n[[CONTACT Sarah'), '[[CONTACT Sarah'.length);
+// The whitespace framing the sentinel is held with it, never released ahead of
+// it — once a token is streamed it cannot be taken back, so a confirmed
+// sentinel must not leave a stray newline at the end of the visible reply.
+assert.equal(heldPrefixLength('Done.\n[[CONTACT Sarah'), '\n[[CONTACT Sarah'.length);
+assert.equal(heldPrefixLength('Done.\n\n[[RESUME]]'), '\n\n[[RESUME]]'.length);
+assert.equal(heldPrefixLength('Done. [[RESUME]]'), ' [[RESUME]]'.length);
 
 // A viable partial prefix at the very end: hold it.
-assert.equal(heldPrefixLength('Done. [[CON'), '[[CON'.length);
-assert.equal(heldPrefixLength('Done. [['), 2);
-assert.equal(heldPrefixLength('Done. ['), 1);
+// The space in front is held with the partial too, for the same reason: if the
+// tail turns out not to be a sentinel it is all released together next chunk.
+assert.equal(heldPrefixLength('Done. [[CON'), ' [[CON'.length);
+assert.equal(heldPrefixLength('Done. [['), ' [['.length);
+assert.equal(heldPrefixLength('Done. ['), ' ['.length);
 
 // A '[[' that cannot become a known command is ordinary text: release it.
 assert.equal(heldPrefixLength('See [[x'), 0);

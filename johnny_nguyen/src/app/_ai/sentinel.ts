@@ -39,23 +39,38 @@ function commandStart(text: string): number {
  * can never retroactively become part of a sentinel.
  */
 export function heldPrefixLength(text: string): number {
+  const holdFrom = holdStart(text);
+  if (holdFrom === -1) return 0;
+
+  // Extend the hold back over any whitespace immediately in front. The sentinel
+  // sits on its own line, and that newline is its framing rather than part of
+  // the reply. A streamed token cannot be taken back, so the whitespace must
+  // never be released *before* we know whether a sentinel follows it — if none
+  // does, it is released intact with the next chunk.
+  const before = text.slice(0, holdFrom).replace(/\s+$/, '');
+  return text.length - before.length;
+}
+
+/**
+ * Index from which `text` must be withheld, ignoring the whitespace handling
+ * above, or -1 if all of it is safe to release.
+ */
+function holdStart(text: string): number {
   const start = commandStart(text);
-  if (start !== -1) return text.length - start;
+  if (start !== -1) return start;
 
-  // Trailing whitespace is held rather than released: the sentinel sits on its
-  // own line, so the newline in front of it would otherwise be streamed out and
-  // leave a dangling blank line under the reply. If no sentinel follows, this
-  // whitespace is released with the next chunk, or trimmed at the end.
-  const trimmed = text.trimEnd();
-  if (trimmed.length < text.length) return text.length - trimmed.length;
-
-  // Otherwise hold the longest tail that is still a viable prefix of a command.
+  // A trailing tail that is still a viable prefix of a command.
   const maxHold = Math.min(LONGEST_COMMAND - 1, text.length);
   for (let hold = maxHold; hold > 0; hold--) {
     const tail = text.slice(text.length - hold);
-    if (COMMANDS.some((command) => command.startsWith(tail))) return hold;
+    if (COMMANDS.some((command) => command.startsWith(tail))) return text.length - hold;
   }
-  return 0;
+
+  // Trailing whitespace on its own: it may yet turn out to front a sentinel.
+  const trimmed = text.trimEnd();
+  if (trimmed.length < text.length) return trimmed.length;
+
+  return -1;
 }
 
 function parseContact(body: string): ContactDraft | null {
