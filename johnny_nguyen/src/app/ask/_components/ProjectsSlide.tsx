@@ -20,6 +20,10 @@ export default function ProjectsSlide({ question, text }: { question: string; te
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // Arrows must not steal the caret from the always-present ask input.
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
       if (event.key === 'ArrowLeft') step(-1);
       if (event.key === 'ArrowRight') step(1);
     };

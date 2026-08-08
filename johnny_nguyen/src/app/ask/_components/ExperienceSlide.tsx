@@ -26,6 +26,10 @@ export default function ExperienceSlide({ question, text }: { question: string; 
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // Arrows must not steal the caret from the always-present ask input.
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
       if (event.key === 'ArrowLeft') step(-1);
       if (event.key === 'ArrowRight') step(1);
     };
@@ -112,7 +116,7 @@ export default function ExperienceSlide({ question, text }: { question: string; 
       </div>
       <div className="flex max-w-2xl justify-between px-8 text-[10px] text-gray-600">
         <span>{ROLES[0].axisLabel ?? ROLES[0].year}</span>
-        <span className="text-teal-300">{ROLES[ROLES.length - 1].axisLabel ?? 'Now'}</span>
+        <span className="text-teal-300">{ROLES[ROLES.length - 1].axisLabel ?? ROLES[ROLES.length - 1].year}</span>
       </div>
     </div>
   );
