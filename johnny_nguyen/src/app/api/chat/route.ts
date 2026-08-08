@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { matchFallback } from '../../_ai/fallback';
 import { limiter } from '../../_ai/limits';
 import { isProviderConfigured, streamCompletion } from '../../_ai/provider';
@@ -176,7 +177,16 @@ function modelResponse(
             action,
             ...(surface === 'ask' ? { recap: recapOf(commands) } : {}),
           });
-          if (surface === 'ask') logAskTurn(sessionId, question, full);
+          if (surface === 'ask') {
+            // after() keeps the invocation alive past the closed stream so the blob
+            // write can finish; logging stays a bonus — if the scheduler itself is
+            // unavailable, fall back to the plain fire-and-forget rather than throw.
+            try {
+              after(() => logAskTurn(sessionId, question, full));
+            } catch {
+              logAskTurn(sessionId, question, full);
+            }
+          }
         } else {
           sendFallback('');
         }
