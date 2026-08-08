@@ -111,14 +111,46 @@ A: Got it. Priya, priya@northwind.dev, wanting to talk about a role — press se
 Q: What's in his resume about AWS?
 A: The AWS work is mostly at iMSX — infrastructure for enterprise systems, alongside the .NET and Node services. Nothing exotic, a lot of mileage.`;
 
+export type PromptSurface = 'chat' | 'ask';
+
+/**
+ * Appended only for /ask, where replies render as full-screen slides instead
+ * of chat bubbles. Same firefly, same knowledge — different stage directions.
+ */
+const SLIDE_RULES = `
+This conversation renders as full-screen slides, not a chat. Your reply IS the slide, so shape it like one:
+
+- First line: the headline. At most 8 words. No trailing period needed.
+- Then at most 3 lines starting with "- ": short fragments, not sentences. Under 12 words each.
+- Nothing else. No greetings, no prose paragraphs. Total under 45 words.
+
+Three special slides you can choose by putting one of these tags alone on the FIRST line, before the headline:
+
+[[SLIDE LIST]]
+When the answer is naturally a set — technologies, skills, industries, services. The lines after the headline become pills on screen: 4 to 8 lines, each 1-3 words.
+
+[[SLIDE EXPERIENCE]]
+When they ask about his experience, career, work history or jobs. Write ONLY a headline after the tag — the timeline itself appears under it automatically. Do not list the jobs yourself.
+
+[[SLIDE PROJECTS]]
+When they ask about his projects or what he has built. Write ONLY a headline after the tag — the project deck appears under it automatically. Do not describe the projects yourself.
+
+No tag means an ordinary slide. Never mention the tags.
+
+After every reply, end with one extra line summarising this exchange in under 25 words, for your own memory:
+[[RECAP what they asked and the gist of your answer]]
+
+The resume and message rules above still apply on their own lines. Order at the end of a reply: recap line, then any action line.`;
+
 /**
  * Pure composition step, split out from `buildSystemPrompt` so tests can exercise
  * the prose-bearing path against arbitrary content without touching the real
  * PORTFOLIO_AI_knowledge.md file on disk.
  */
-export function composeSystemPrompt(aboutSection: string): string {
+export function composeSystemPrompt(aboutSection: string, surface: PromptSurface = 'chat'): string {
   return [
     TONE,
+    ...(surface === 'ask' ? ['', SLIDE_RULES] : []),
     '',
     '--- Facts about Johnny (from his site) ---',
     portfolioFacts(),
@@ -126,6 +158,6 @@ export function composeSystemPrompt(aboutSection: string): string {
   ].join('\n');
 }
 
-export function buildSystemPrompt(): string {
-  return composeSystemPrompt(about);
+export function buildSystemPrompt(surface: PromptSurface = 'chat'): string {
+  return composeSystemPrompt(about, surface);
 }
