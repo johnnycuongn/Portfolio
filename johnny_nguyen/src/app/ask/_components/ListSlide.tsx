@@ -35,9 +35,10 @@ export default function ListSlide({
         {headline}
       </h2>
       <div className="flex max-w-3xl flex-wrap gap-3">
+        {/* Items are append-only during streaming; text-keys would remount the still-growing last item. */}
         {items.map((item, index) => (
           <motion.span
-            key={item}
+            key={index}
             initial={reduceMotion ? false : { opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20, delay: reduceMotion ? 0 : index * 0.05 }}

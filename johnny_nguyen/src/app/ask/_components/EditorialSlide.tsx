@@ -37,8 +37,9 @@ export default function EditorialSlide({
       </h2>
       {items.length > 0 && (
         <ul className="space-y-2 text-base text-gray-400 md:text-lg">
-          {items.map((item) => (
-            <li key={item}>— {item}</li>
+          {/* Items are append-only during streaming; text-keys would remount the still-growing last item. */}
+          {items.map((item, index) => (
+            <li key={index}>— {item}</li>
           ))}
         </ul>
       )}
