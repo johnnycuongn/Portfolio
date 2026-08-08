@@ -96,4 +96,47 @@ assert.equal(heldPrefixLength('An array like [[1,2]] is fine'), 0);
 assert.equal(heldPrefixLength('Done.\n'), 1);
 assert.equal(heldPrefixLength('Done.  '), 2);
 
+// --- splitReply: sequences of trailing sentinels -----------------------------
+
+import { splitReply } from '../src/app/_ai/sentinel';
+
+const recapOnly = splitReply('He is at iMSX.\n[[RECAP Asked what he does; he builds enterprise systems at iMSX.]]');
+assert.equal(recapOnly.visible, 'He is at iMSX.');
+assert.deepEqual(recapOnly.commands, [
+  { kind: 'recap', text: 'Asked what he does; he builds enterprise systems at iMSX.' },
+]);
+
+// Recap and an action on the same reply, either order.
+const recapThenResume = splitReply('Here it is.\n[[RECAP Asked for the resume.]]\n[[RESUME]]');
+assert.equal(recapThenResume.visible, 'Here it is.');
+assert.deepEqual(recapThenResume.commands, [
+  { kind: 'recap', text: 'Asked for the resume.' },
+  { kind: 'resume' },
+]);
+const resumeThenRecap = splitReply('Here.\n[[RESUME]]\n[[RECAP Asked for the resume.]]');
+assert.deepEqual(resumeThenRecap.commands, [{ kind: 'resume' }, { kind: 'recap', text: 'Asked for the resume.' }]);
+
+// A malformed member is skipped; later members still parse.
+const skipMalformed = splitReply('x\n[[CONTACT only-two | fields]]\n[[RECAP Still summarised.]]');
+assert.deepEqual(skipMalformed.commands, [{ kind: 'recap', text: 'Still summarised.' }]);
+
+// Empty or over-long recap bodies are malformed, not commands.
+assert.deepEqual(splitReply('x\n[[RECAP   ]]').commands, []);
+assert.deepEqual(splitReply(`x\n[[RECAP ${'a'.repeat(301)}]]`).commands, []);
+
+// An unterminated trailing sentinel is still invisible and still yields nothing.
+const unterminatedRecap = splitReply('Sure.\n[[RECAP half a summar');
+assert.equal(unterminatedRecap.visible, 'Sure.');
+assert.deepEqual(unterminatedRecap.commands, []);
+
+// splitSentinel still returns the first actionable command and hides recaps
+// from its single-command view of the world.
+assert.deepEqual(
+  splitSentinel('Here.\n[[RECAP Asked for the resume.]]\n[[RESUME]]').command,
+  { kind: 'resume' },
+);
+
+// heldPrefixLength holds a partial [[RECAP just like the other commands.
+assert.equal(heldPrefixLength('answer text [[REC'), '[[REC'.length + 1);
+
 console.log('check-sentinel: ok');
