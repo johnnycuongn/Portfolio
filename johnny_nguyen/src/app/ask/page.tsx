@@ -36,6 +36,12 @@ function AskPage() {
 
   const landing = current === null;
 
+  // onExitComplete fires for BOTH directions of the landing/answer swap. Only
+  // the landing tree's departure should arm the bottom bar — after Clear it is
+  // the ANSWER tree exiting, and landing is true again by the time this fires.
+  const landingRef = useRef(landing);
+  landingRef.current = landing;
+
   // The firefly opening the resume is the action itself on /ask — no button
   // press to wait for. It must fire only when a LIVE turn settles, never for a
   // conversation restored from storage, so the trigger is the streaming
@@ -124,7 +130,7 @@ function AskPage() {
     // the dialog itself. React 19 takes `inert` as a plain boolean prop.
     <>
       <main className="fixed inset-0 flex flex-col overflow-hidden bg-slate-900" inert={resumeOpen}>
-        <AnimatePresence onExitComplete={() => setLandingGone(true)}>
+        <AnimatePresence onExitComplete={() => { if (!landingRef.current) setLandingGone(true); }}>
           {landing ? (
             <motion.div
               key="landing"
