@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, FC } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useAnimation, useReducedMotion } from 'motion/react';
 import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
-import { PORTFOLIO, RESUME } from '../PORTFOLIO';
+import { PORTFOLIO, RESUME, ASK } from '../PORTFOLIO';
 import useResumeViewer from '@/utils/useResumeViewer';
 
 interface TabItemProps {
@@ -171,7 +171,7 @@ const AskTab = () => (
       className="bg-slate-900 text-white rounded select-none flex items-center group"
       whileHover={{ scale: 1.05 }}
     >
-      <Link href="/ask" className="px-4 py-2 cursor-pointer">Ask</Link>
+      <Link href="/ask" className="px-4 py-2 cursor-pointer">{ASK.navLabel}</Link>
     </motion.div>
   </li>
 );

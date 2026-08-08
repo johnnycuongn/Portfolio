@@ -103,6 +103,8 @@ const ASK = {
   kickerPrefix: 'you asked',
   /** aria-label for the slide region. */
   slideLabel: `About ${PORTFOLIO.preferred_name}`,
+  /** Nav entry on the main page linking to /ask. */
+  navLabel: 'Ask',
 };
 
 interface JobTimeLineItem {
