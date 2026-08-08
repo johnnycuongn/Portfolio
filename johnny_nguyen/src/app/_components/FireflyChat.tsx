@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { CHAT } from '../PORTFOLIO';
 import ContactSendButton from './ContactSendButton';
+import FireflyDot from './FireflyDot';
 import { MAX_MESSAGE_CHARS } from '@/app/_ai/types';
 import useBodyScrollLock from '@/utils/useBodyScrollLock';
 import useChat from '@/utils/useChat';
@@ -11,32 +12,10 @@ import useFocusTrap from '@/utils/useFocusTrap';
 import useKeyboardInset from '@/utils/useKeyboardInset';
 import useResumeViewer from '@/utils/useResumeViewer';
 
-const GLOW = 'radial-gradient(circle, rgba(230,255,150,1) 0%, rgba(230,255,150,0.8) 25%, rgba(230,255,150,0.4) 50%, rgba(230,255,150,0) 75%)';
-
 /** The beacon drifts inside a 100×100 box, up and left of its dock. */
 const WANDER_BOX = 50;
 const WANDER_EVERY_MS = 3000;
 const WANDER_DURATION = 2.4;
-
-function FireflyDot({ size = 8, fast = false }: { size?: number; fast?: boolean }) {
-  const reduceMotion = useReducedMotion();
-  return (
-    <motion.span
-      aria-hidden
-      animate={reduceMotion ? undefined : { scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-      transition={reduceMotion ? undefined : { duration: fast ? 0.7 : 2, ease: 'easeInOut', repeat: Infinity }}
-      style={{
-        display: 'block',
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        backgroundColor: '#fddba3',
-        backgroundImage: GLOW,
-        boxShadow: '0 0 10px 5px rgba(230,255,150,0.3)',
-      }}
-    />
-  );
-}
 
 export default function FireflyChat() {
   const [open, setOpen] = useState(false);

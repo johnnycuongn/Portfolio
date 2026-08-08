@@ -50,7 +50,8 @@ function clientIp(request: Request): string {
 function actionFor(command: ReturnType<typeof splitSentinel>['command']): ChatAction | null {
   if (!command) return null;
   if (command.kind === 'resume') return { label: CHAT.resumeLabel, opens: 'resume' };
-  return { label: CHAT.sendLabel, sends: command.draft };
+  if (command.kind === 'contact') return { label: CHAT.sendLabel, sends: command.draft };
+  return null;
 }
 
 /**

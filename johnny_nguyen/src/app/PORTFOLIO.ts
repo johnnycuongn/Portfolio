@@ -88,6 +88,23 @@ const CHAT = {
   dialogLabel: `Chat with ${CHAT_NAME}`,
 };
 
+const ASK = {
+  /** One line under the name on the /ask landing, before anyone has asked. */
+  intro: `Ask anything about ${PORTFOLIO.preferred_name} — his work answers back.`,
+  placeholder: `Ask about ${PORTFOLIO.preferred_name}…`,
+  /** Label above the recap trail of past exchanges. */
+  historyLabel: 'so far',
+  /** Quiet route back to the scrolling site. */
+  backLabel: 'or scroll the classic site',
+  /** Honest line about logging — /ask stores anonymous transcripts, the main chat does not. */
+  privacyNote: 'Anonymous conversations may be saved to improve this page.',
+  clearLabel: 'Start over',
+  /** Kicker prefix above a slide headline, before the visitor's own words. */
+  kickerPrefix: 'you asked',
+  /** aria-label for the slide region. */
+  slideLabel: `About ${PORTFOLIO.preferred_name}`,
+};
+
 interface JobTimeLineItem {
   year: string;
   /** Short label for the timeline axis, e.g. '2023'. Falls back to `year`. */
@@ -181,5 +198,5 @@ const PROJECTS: Project[] = [
   },
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, RESUME, TECH_SERVICES };
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, ASK, RESUME, TECH_SERVICES };
 export type { JobTimeLineItem, Project };
