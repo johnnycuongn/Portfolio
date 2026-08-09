@@ -14,6 +14,7 @@ import EditorialSlide from './_components/EditorialSlide';
 import ListSlide from './_components/ListSlide';
 import ExperienceSlide from './_components/ExperienceSlide';
 import ProjectsSlide from './_components/ProjectsSlide';
+import RailSlide from './_components/RailSlide';
 import HistoryTrail from './_components/HistoryTrail';
 
 /**
@@ -192,6 +193,8 @@ function AskPage() {
                       <ExperienceSlide question={current.question} text={current.text} />
                     ) : current.format === 'projects' ? (
                       <ProjectsSlide question={current.question} text={current.text} />
+                    ) : current.format === 'rail' ? (
+                      <RailSlide question={current.question} text={current.text} action={current.action} />
                     ) : current.format === 'list' ? (
                       <ListSlide question={current.question} text={current.text} action={current.action} />
                     ) : (
