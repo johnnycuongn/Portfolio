@@ -1,6 +1,7 @@
 'use client';
 
 import type { ChatAction } from '@/app/_ai/types';
+import ContactFormCard from './ContactFormCard';
 import ContactSendButton from '@/app/_components/ContactSendButton';
 import useResumeViewer from '@/utils/useResumeViewer';
 
@@ -11,6 +12,8 @@ import useResumeViewer from '@/utils/useResumeViewer';
 export default function SlideAction({ action }: { action?: ChatAction }) {
   const { open: openResume } = useResumeViewer();
   if (!action) return null;
+
+  if (action.form) return <ContactFormCard draft={action.form.draft} />;
 
   if (action.sends) return <ContactSendButton draft={action.sends} />;
 
