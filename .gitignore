@@ -2,3 +2,5 @@
 .superpowers/
 .headroom
 .serena
+.vercel
+.env*
