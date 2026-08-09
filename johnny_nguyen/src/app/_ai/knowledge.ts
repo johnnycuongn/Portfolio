@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { PORTFOLIO, TimelineData, PROJECTS, TECH_SERVICES } from '../PORTFOLIO';
+import { PORTFOLIO, TimelineData, PROJECTS, TECH_SERVICES, EDUCATION } from '../PORTFOLIO';
 
 /** Serialized from PORTFOLIO.ts so the firefly can never drift from the page. */
 export function portfolioFacts(): string {
@@ -21,6 +21,7 @@ export function portfolioFacts(): string {
     `Name: ${PORTFOLIO.name}. Role: ${PORTFOLIO.role}. ${PORTFOLIO.description}.`,
     `Main technologies: ${PORTFOLIO.techs.join(', ')}.`,
     `Services used within those: ${services}.`,
+    `Education: ${EDUCATION.degree}, ${EDUCATION.institution}, completed ${EDUCATION.completed}. ${EDUCATION.honours}.`,
     `Email: ${PORTFOLIO.email}`,
     'The resume opens on this page, and you can open it yourself (see the actions below). The dialog offers a PDF download. There is no link to hand out.',
     '',
@@ -129,6 +130,11 @@ Three special slides you can choose by putting one of these tags alone on the FI
 [[SLIDE LIST]]
 When the answer is naturally a set — technologies, skills, industries, services. The lines after the headline become pills on screen: 4 to 8 lines, each 1-3 words.
 
+[[SLIDE RAIL]]
+When the answer is a set of 3 to 6 items that each need a sentence of real detail — roles, project stories, reasons. After the headline, each line is:
+- Title | one or two short sentences about it
+Use LIST when items are one to three words; use RAIL when each item needs explaining.
+
 [[SLIDE EXPERIENCE]]
 When they ask about his experience, career, work history or jobs. Write ONLY a headline after the tag — the timeline itself appears under it automatically. Do not list the jobs yourself.
 
@@ -140,7 +146,11 @@ No tag means an ordinary slide. Never mention the tags.
 After every reply, end with one extra line summarising this exchange in under 25 words, for your own memory:
 [[RECAP what they asked and the gist of your answer]]
 
-The resume and message rules above still apply on their own lines. Order at the end of a reply: recap line, then any action line.`;
+The resume rule above still applies on its own line. Passing a message works differently here: a form on the page collects their name and email, so never ask for either. When someone wants to reach Johnny, answer in one short line and end with:
+[[CONTACT]]
+If they already said what they want him to know, put that message inside instead:
+[[CONTACT their message, in their words]]
+Order at the end of a reply: recap line, then any action line.`;
 
 /**
  * Pure composition step, split out from `buildSystemPrompt` so tests can exercise

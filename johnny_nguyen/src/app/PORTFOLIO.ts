@@ -11,6 +11,19 @@ const PORTFOLIO = {
 }
 
 /**
+ * Not rendered on the page — the firefly's only structured source for it. The
+ * fuller version (GPA, the fact he worked through it) lives in
+ * PORTFOLIO_AI_knowledge.md, which is optional; this stays here so the degree
+ * survives that file being trimmed or absent.
+ */
+const EDUCATION = {
+  degree: 'Bachelor of Computer Science (Honours)',
+  institution: 'University of Technology Sydney',
+  completed: 'December 2023',
+  honours: 'First Class Honours',
+};
+
+/**
  * What sits underneath a tech pill. A tag listed here unfurls its services when
  * a visitor hovers (or taps) it; anything absent stays a plain pill. Keys must
  * match `PORTFOLIO.techs` exactly.
@@ -105,6 +118,17 @@ const ASK = {
   slideLabel: `About ${PORTFOLIO.preferred_name}`,
   /** Nav entry on the main page linking to /ask. */
   navLabel: 'Ask',
+  /** Card title above the /ask contact form. */
+  formTitle: `Send ${PORTFOLIO.preferred_name} a message`,
+  nameLabel: 'Your name',
+  emailLabel: 'Your email',
+  messageLabel: 'Your message',
+  /** Placeholder when the model drafted nothing — the form asks instead. */
+  messagePrompt: 'What should he know?',
+  /** Read-back heading on the confirm step. */
+  confirmTitle: `Send this to ${PORTFOLIO.preferred_name}?`,
+  confirmLabel: 'Send it',
+  editLabel: 'Keep editing',
 };
 
 interface JobTimeLineItem {
@@ -200,5 +224,5 @@ const PROJECTS: Project[] = [
   },
 ];
 
-export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, ASK, RESUME, TECH_SERVICES };
+export { JobTimelineData as TimelineData, PORTFOLIO, PROFILE_LINKS, PROJECTS, CHAT, ASK, RESUME, TECH_SERVICES, EDUCATION };
 export type { JobTimeLineItem, Project };
