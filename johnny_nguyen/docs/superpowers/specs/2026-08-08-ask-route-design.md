@@ -152,9 +152,12 @@ New components under `src/app/ask/` (co-located, since only /ask uses them):
 - The client generates `crypto.randomUUID()` per conversation, persists it with
   the /ask chat in localStorage, sends it with each request, resets it on Clear.
   No IP addresses are read, hashed, or stored anywhere.
-- After each turn settles, the route fire-and-forgets:
-  `put('asks/<session-id>.txt', fullTranscript, { access: 'private', allowOverwrite: true })`
-  — one private blob per conversation, rewritten each turn, timestamps inside.
+- After each turn settles, the route fire-and-forgets
+  `put('asks/<session-id>/<timestamp>.txt', turnText, { access: 'private' })`
+  — one private blob **per turn**, grouped by session folder. (Amended from
+  "one blob rewritten per turn": the server only ever holds the current turn in
+  full — past history arrives recap-compressed — and append-by-construction
+  avoids a read-modify-write race between overlapping requests.) The write is scheduled via `after()` from `next/server` so it survives the response ending.
   A failed write logs to console and never delays or breaks the visitor's reply.
 - Scope: /ask only. The main-page chat's "stays in your browser" promise is
   untouched. /ask displays its own honest privacy line
