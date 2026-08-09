@@ -1,4 +1,5 @@
 import { head, put } from '@vercel/blob';
+import { blobToken } from './blobToken';
 import {
   addEntry,
   CACHE_PATHNAME,
@@ -21,11 +22,11 @@ let memory: { at: number; entries: CacheEntry[] } | null = null;
 let lastHitPersist = 0;
 
 function hasToken(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(blobToken());
 }
 
 async function fetchIndex(): Promise<CacheEntry[]> {
-  const meta = await head(CACHE_PATHNAME);
+  const meta = await head(CACHE_PATHNAME, { token: blobToken() });
   const response = await fetch(meta.downloadUrl);
   if (!response.ok) return [];
   const parsed = (await response.json()) as { entries?: unknown[] };
@@ -57,6 +58,7 @@ function persist(entries: CacheEntry[]): Promise<unknown> {
     addRandomSuffix: false,
     contentType: 'application/json',
     allowOverwrite: true,
+    token: blobToken(),
   }).catch((err) => console.error('cacheStore: persist failed', err));
 }
 

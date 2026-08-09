@@ -9,7 +9,7 @@
     "lint": "next lint",
     "resume": "tsx scripts/build-resume.ts",
     "seed:ask": "tsx scripts/seed-ask-cache.ts",
-    "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts && tsx scripts/check-storage.ts && tsx scripts/check-limits.ts && tsx scripts/check-knowledge.ts && tsx scripts/check-resume.ts && tsx scripts/check-sentinel.ts && tsx scripts/check-provider.ts && tsx scripts/check-slides.ts && tsx scripts/check-ask-storage.ts && tsx scripts/check-transcript.ts && tsx scripts/check-cache.ts && tsx scripts/check-seeds.ts"
+    "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts && tsx scripts/check-storage.ts && tsx scripts/check-limits.ts && tsx scripts/check-knowledge.ts && tsx scripts/check-resume.ts && tsx scripts/check-sentinel.ts && tsx scripts/check-provider.ts && tsx scripts/check-slides.ts && tsx scripts/check-ask-storage.ts && tsx scripts/check-transcript.ts && tsx scripts/check-cache.ts && tsx scripts/check-seeds.ts && tsx scripts/check-blob-token.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.1",

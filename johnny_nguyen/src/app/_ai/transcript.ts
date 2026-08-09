@@ -1,4 +1,5 @@
 import { put } from '@vercel/blob';
+import { blobToken } from './blobToken';
 
 /**
  * /ask transcript logging. One private blob per turn under the visitor's
@@ -20,13 +21,15 @@ export function formatTurn(question: string, answer: string, now: Date = new Dat
 
 /** Fire-and-forget: never awaited by the caller, never throws into the stream. */
 export function logAskTurn(sessionId: string, question: string, answer: string): void {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return;
+  const token = blobToken();
+  if (!token) return;
   if (!isLoggableSessionId(sessionId)) return;
 
   put(`asks/${sessionId}/${Date.now()}.txt`, formatTurn(question, answer), {
     access: 'private',
     addRandomSuffix: false,
     contentType: 'text/plain; charset=utf-8',
+    token,
   }).catch((err) => {
     // Operator-facing only; the visitor's reply has already streamed.
     console.error('transcript: blob write failed', err);
