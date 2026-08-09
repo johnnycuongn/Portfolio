@@ -24,7 +24,11 @@ export const dynamic = 'force-dynamic';
 // the visitor a dead stream instead of the canned answer this route exists to guarantee.
 export const maxDuration = 30;
 
-const PROVIDER_TIMEOUT_MS = 15_000;
+// The ask surface's system prompt is larger (it carries the cache/slide
+// instructions on top of the knowledge doc) and measured latency there runs
+// 6-13s, occasionally past the old 15s cutoff — dropping a good answer to the
+// canned fallback for no reason. 22s still leaves headroom under maxDuration.
+const PROVIDER_TIMEOUT_MS = 22_000;
 
 const NDJSON_HEADERS = {
   'content-type': 'application/x-ndjson; charset=utf-8',
@@ -129,13 +133,26 @@ function modelResponse(
       const sendFallback = (handoff: string) => {
         if (surface === 'ask' && !formatSent) sendFormat('editorial');
         const answer = matchFallback(question);
-        write({ type: 'token', text: handoff + answer.answer });
+        const text = handoff + answer.answer;
+        write({ type: 'token', text });
         write({
           type: 'done',
           fallback: true,
           action: answer.action ?? null,
           ...(surface === 'ask' ? { recap: null } : {}),
         });
+        // A fallback on the ask surface is otherwise invisible in transcripts —
+        // the provider failed or the rate limit tripped, so this canned line is
+        // the whole visitor experience and exactly the question worth seeing.
+        // Never write it back to the cache, though: it's stock copy, not a
+        // model answer worth serving to the next visitor.
+        if (surface === 'ask') {
+          try {
+            after(() => logAskTurn(sessionId, question, text));
+          } catch {
+            logAskTurn(sessionId, question, text);
+          }
+        }
       };
 
       try {

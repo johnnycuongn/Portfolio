@@ -31,7 +31,14 @@ export default function ListSlide({
       >
         {ASK.kickerPrefix} · {question}
       </motion.p>
-      <h2 className="max-w-4xl text-3xl font-bold leading-tight text-white md:text-5xl">
+      {/* A fallback or an over-long model reply arrives as one prose line, and
+          slide-scale type turns that into a wall of text — clamp the size once
+          the headline stops looking like a headline. */}
+      <h2
+        className={`max-w-4xl font-bold leading-tight text-white ${
+          headline.length > 80 ? 'text-xl md:text-2xl' : 'text-3xl md:text-5xl'
+        }`}
+      >
         {headline}
       </h2>
       <div className="flex max-w-3xl flex-wrap gap-3">

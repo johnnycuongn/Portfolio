@@ -80,6 +80,10 @@ export async function writeBackAnswer(
   recap: string | null,
 ): Promise<void> {
   if (!hasToken()) return;
+  // Write-back serves one visitor's answer to the next, so it needs an off
+  // switch that does not require a deploy of new code: set ASK_CACHE_WRITEBACK
+  // to "off" and the cache becomes seeds-only, still serving instantly.
+  if (process.env.ASK_CACHE_WRITEBACK === 'off') return;
   try {
     const entries = await loadCacheEntries();
     const entry = entryFromAnswer(question, format, answer, recap);

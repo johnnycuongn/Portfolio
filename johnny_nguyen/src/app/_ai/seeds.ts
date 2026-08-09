@@ -130,7 +130,7 @@ export const SEED_ENTRIES: CacheEntry[] = [
     phrasings: ['does he work remote', 'is he open to remote work', 'can he work remotely', 'is he open to relocating', 'does he do remote work'],
     keywords: ['remote', 'relocate', 'relocating', 'onsite', 'hybrid'],
     format: 'editorial',
-    answer: `Also best asked directly.\n- arrangements vary role to role\n- ask him — takes a minute`,
+    answer: `Best asked directly.\n- arrangements vary role to role\n- ask him — takes a minute`,
     recap: 'Asked about remote work; pointed at the contact form.',
     action: 'contact-form',
   }),
