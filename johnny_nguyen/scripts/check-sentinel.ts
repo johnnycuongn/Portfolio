@@ -117,12 +117,41 @@ const resumeThenRecap = splitReply('Here.\n[[RESUME]]\n[[RECAP Asked for the res
 assert.deepEqual(resumeThenRecap.commands, [{ kind: 'resume' }, { kind: 'recap', text: 'Asked for the resume.' }]);
 
 // A malformed member is skipped; later members still parse.
+// Note: one-pipe CONTACT bodies now parse as valid contact-form commands, not malformed.
 const skipMalformed = splitReply('x\n[[CONTACT only-two | fields]]\n[[RECAP Still summarised.]]');
-assert.deepEqual(skipMalformed.commands, [{ kind: 'recap', text: 'Still summarised.' }]);
+assert.deepEqual(skipMalformed.commands, [
+  { kind: 'contact-form', draft: 'only-two | fields' },
+  { kind: 'recap', text: 'Still summarised.' },
+]);
 
 // Empty or over-long recap bodies are malformed, not commands.
 assert.deepEqual(splitReply('x\n[[RECAP   ]]').commands, []);
 assert.deepEqual(splitReply(`x\n[[RECAP ${'a'.repeat(301)}]]`).commands, []);
+
+// --- contact-form: the /ask form flow ----------------------------------------
+// Bare CONTACT is intent with nothing drafted yet.
+assert.deepEqual(splitReply('One line.\n[[CONTACT]]').commands, [{ kind: 'contact-form', draft: '' }]);
+// A payload that is not a 3-field draft is the visitor's message, drafted.
+assert.deepEqual(splitReply('Got it.\n[[CONTACT wants to talk about a role]]').commands, [
+  { kind: 'contact-form', draft: 'wants to talk about a role' },
+]);
+// Recap + form on one reply still both parse.
+assert.deepEqual(splitReply('Got it.\n[[RECAP Wants to reach him.]]\n[[CONTACT about a role]]').commands, [
+  { kind: 'recap', text: 'Wants to reach him.' },
+  { kind: 'contact-form', draft: 'about a role' },
+]);
+// An ATTEMPTED full draft (two-plus pipes) that fails validation stays
+// suppressed — it must not leak emails into a form prefixed as a message.
+assert.deepEqual(splitReply('x\n[[CONTACT  | s@acme.com | hello]]').commands, []);
+// Legacy 3-field drafts still parse as the chat surface's contact command.
+assert.deepEqual(
+  splitReply('x\n[[CONTACT Sarah | sarah@acme.com | About work]]').commands[0],
+  { kind: 'contact', draft: { name: 'Sarah', email: 'sarah@acme.com', message: 'About work' } },
+);
+// Over-long drafts are malformed.
+assert.deepEqual(splitReply(`x\n[[CONTACT ${'a'.repeat(1001)}]]`).commands, []);
+// The legacy single-command view never surfaces the form kind.
+assert.equal(splitSentinel('x\n[[CONTACT wants to chat]]').command, null);
 
 // An unterminated trailing sentinel is still invisible and still yields nothing.
 const unterminatedRecap = splitReply('Sure.\n[[RECAP half a summar');

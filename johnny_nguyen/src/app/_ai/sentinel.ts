@@ -1,4 +1,4 @@
-import { validateDraft, type ContactDraft } from '../_contact/draft';
+import { validateDraft, MAX_CONTACT_MESSAGE_CHARS, type ContactDraft } from '../_contact/draft';
 
 /**
  * The model signals an action by ending its reply with a sentinel line. This
@@ -17,6 +17,7 @@ const MAX_RECAP_CHARS = 300;
 
 export type SentinelCommand =
   | { kind: 'contact'; draft: ContactDraft }
+  | { kind: 'contact-form'; draft: string }
   | { kind: 'resume' }
   | { kind: 'recap'; text: string };
 
@@ -107,8 +108,19 @@ function parseCommand(body: string): SentinelCommand | null {
   }
 
   if (body.startsWith('CONTACT')) {
-    const draft = parseContact(body.slice('CONTACT'.length));
-    return draft ? { kind: 'contact', draft } : null;
+    const payload = body.slice('CONTACT'.length);
+    const draft = parseContact(payload);
+    if (draft) return { kind: 'contact', draft };
+
+    // Not a valid 3-field draft. Two or more pipes means the model TRIED the
+    // full shape and got it wrong — suppress it rather than leak fields into
+    // a message prefill. Anything else is the /ask form flow: the payload
+    // (possibly empty) is the visitor's drafted message.
+    const pipes = (payload.match(/\|/g) ?? []).length;
+    if (pipes >= 2) return null;
+    const text = payload.trim();
+    if (text.length > MAX_CONTACT_MESSAGE_CHARS) return null;
+    return { kind: 'contact-form', draft: text };
   }
 
   return null;
@@ -166,6 +178,9 @@ export function splitSentinel(text: string): SentinelSplit {
     const command = parseCommand(body);
 
     if (command && command.kind !== 'recap') {
+      // The form kind postdates this legacy view. Under the old contract a
+      // CONTACT without a full valid draft suppressed the action entirely.
+      if (command.kind === 'contact-form') return { visible, command: null };
       return { visible, command };
     }
 

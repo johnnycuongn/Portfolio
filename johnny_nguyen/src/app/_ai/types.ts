@@ -15,6 +15,8 @@ export interface ChatAction {
   opens?: 'resume';
   /** A message Firefly has drafted. The button posts it; the model never sends. */
   sends?: ContactDraft;
+  /** The /ask contact form, with whatever message the model already drafted. */
+  form?: { draft: string };
 }
 
 export interface ChatMessage {
