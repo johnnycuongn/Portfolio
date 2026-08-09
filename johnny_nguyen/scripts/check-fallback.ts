@@ -19,6 +19,14 @@ const cases: [string, string][] = [
   ['How do I contact him?', 'contact'],
   ['Is he open to new opportunities?', 'looking'],
   ['Who is Johnny?', 'who'],
+  ['What is his education?', 'education'],
+  ['Where did he go to university?', 'education'],
+  ['Does he have a degree?', 'education'],
+  ['What did he study?', 'education'],
+  // "background" also triggers 'experience'; education wins the tie.
+  ['His educational background?', 'education'],
+  // ...but on its own, 'background' is still a question about his career.
+  ['Tell me about his background', 'experience'],
 ];
 for (const [question, expectedId] of cases) {
   assert.equal(matchFallback(question).id, expectedId, `"${question}" should match "${expectedId}"`);
