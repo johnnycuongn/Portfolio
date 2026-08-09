@@ -270,7 +270,7 @@ export default function FireflyChat() {
             className="fixed inset-x-0 bottom-0 z-[200] flex h-[85dvh] flex-col rounded-t-2xl bg-slate-800 text-white sm:inset-x-auto sm:bottom-20 sm:right-6 sm:h-[480px] sm:w-[360px] sm:rounded-2xl"
           >
             <header className="flex shrink-0 items-center gap-2 px-4 py-3">
-              <FireflyDot size={8} fast={isStreaming} />
+              <FireflyDot size={8} pace={isStreaming ? 'thinking' : 'idle'} />
               <span className="text-sm text-gray-300">{CHAT.name}</span>
               <div className="ml-auto flex items-center gap-3">
                 {hasHistory && (
@@ -333,7 +333,7 @@ export default function FireflyChat() {
                   // out of the panel on both sides.
                   <div key={message.id} className="flex max-w-[90%] gap-2">
                     <span className="mt-2 shrink-0">
-                      <FireflyDot size={6} fast={isStreaming && !message.text} />
+                      <FireflyDot size={6} pace={isStreaming && !message.text ? 'thinking' : 'idle'} />
                     </span>
                     <div className="min-w-0">
                       <p className="break-words text-sm leading-6 text-gray-200">{message.text}</p>

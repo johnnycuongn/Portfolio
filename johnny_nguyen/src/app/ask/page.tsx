@@ -73,6 +73,18 @@ function AskPage() {
 
   const showBar = !landing && (landingGone || Boolean(reduceMotion));
 
+  // Arriving at /ask puts the caret in the input: the page is a prompt, so
+  // typing is the only thing to do here. Deferred one frame because a visitor
+  // whose conversation is restored from storage starts on the landing state
+  // too, for the single render before the stored turn loads — focusing them
+  // would pop a mobile keyboard over an answer they came back to read.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (landingRef.current) inputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   // The bottom bar's one focus grab: a visitor who just asked their first
   // question should land back in the input with the caret ready, not have to
   // click it again. A page reload that restores a past conversation must NOT
@@ -104,7 +116,8 @@ function AskPage() {
 
   const inputBar = (
     <motion.form onSubmit={submit} className="flex w-full max-w-2xl items-center gap-3">
-      <FireflyDot fast={isStreaming} />
+      {/* Quick flutter while it thinks, then a slow rest once the answer has landed. */}
+      <FireflyDot pace={isStreaming ? 'thinking' : 'settled'} />
       <input
         ref={inputRef}
         value={draft}
