@@ -75,4 +75,9 @@ assert.deepEqual(loadAsk(storage).turns, []);
 assert.match(newSessionId(), UUID_RE);
 assert.notEqual(newSessionId(), newSessionId());
 
+// A rail-format turn survives the round trip — the validator knows the format.
+const railStore = memoryStorage();
+saveAsk(railStore, newSessionId(), [{ ...turn, id: 'rail-turn', format: 'rail' as const }]);
+assert.equal(loadAsk(railStore).turns[0]?.format, 'rail');
+
 console.log('check-ask-storage: ok');

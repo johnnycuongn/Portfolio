@@ -4,10 +4,11 @@
  * touch fs, env, or anything Node-only.
  */
 
-export type SlideFormat = 'editorial' | 'list' | 'experience' | 'projects';
+export type SlideFormat = 'editorial' | 'list' | 'rail' | 'experience' | 'projects';
 
 const TAGS: Record<string, SlideFormat> = {
   '[[SLIDE LIST]]': 'list',
+  '[[SLIDE RAIL]]': 'rail',
   '[[SLIDE EXPERIENCE]]': 'experience',
   '[[SLIDE PROJECTS]]': 'projects',
 };
@@ -66,4 +67,28 @@ export function parseSlideBody(text: string): { headline: string; items: string[
   const headline = rawHeadline.replace(/^[-–—•]\s*/, '');
   const items = others.map((line) => line.replace(/^[-–—•]\s*/, ''));
   return { headline, items };
+}
+
+export interface RailCard {
+  title: string;
+  body: string;
+}
+
+/**
+ * Rail bodies are "- Title | detail" lines. Only the FIRST pipe separates —
+ * a pipe inside the detail is the model's prose, not protocol. Lines without
+ * a pipe are body-only cards; lines whose body is empty are dropped, so a
+ * reply that never card-shapes yields zero cards and the caller can degrade
+ * to the editorial rendering.
+ */
+export function parseRailCards(text: string): { headline: string; cards: RailCard[] } {
+  const { headline, items } = parseSlideBody(text);
+  const cards = items
+    .map((item) => {
+      const split = item.indexOf('|');
+      if (split === -1) return { title: '', body: item.trim() };
+      return { title: item.slice(0, split).trim(), body: item.slice(split + 1).trim() };
+    })
+    .filter((card) => card.body.length > 0);
+  return { headline, cards };
 }

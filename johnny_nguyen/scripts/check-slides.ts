@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { parseSlideBody, scanLeadingTag } from '../src/app/_ai/slides';
+import { parseSlideBody, scanLeadingTag, parseRailCards } from '../src/app/_ai/slides';
 
 // --- scanLeadingTag: tags settle as soon as they are complete ----------------
 
@@ -73,5 +73,27 @@ assert.equal(scanLeadingTag('\n', false).format, null);
 assert.equal(scanLeadingTag(' [[SLI', false).format, null);
 // But at stream end it settles editorial with the original text intact.
 assert.deepEqual(scanLeadingTag(' [[SLI', true), { format: 'editorial', rest: ' [[SLI' });
+
+// --- rail format -------------------------------------------------------------
+assert.deepEqual(scanLeadingTag('[[SLIDE RAIL]]\nFour roles.\n- iMSX | Enterprise systems.', false).format, 'rail');
+assert.equal(scanLeadingTag('[[SLIDE RA', false).format, null); // viable prefix waits
+
+assert.deepEqual(parseRailCards('Four roles, five years.\n- iMSX | Enterprise systems end to end.\n- WebVine | Licence management from scratch.'), {
+  headline: 'Four roles, five years.',
+  cards: [
+    { title: 'iMSX', body: 'Enterprise systems end to end.' },
+    { title: 'WebVine', body: 'Licence management from scratch.' },
+  ],
+});
+// A line without the separator is a body-only card.
+assert.deepEqual(parseRailCards('H.\n- just a sentence with no title'), {
+  headline: 'H.',
+  cards: [{ title: '', body: 'just a sentence with no title' }],
+});
+// Empty bodies are dropped; a headline-only reply has zero cards.
+assert.deepEqual(parseRailCards('H.\n- Title |'), { headline: 'H.', cards: [] });
+assert.deepEqual(parseRailCards('Just a headline.'), { headline: 'Just a headline.', cards: [] });
+// A pipe in the body is content, not a second separator.
+assert.deepEqual(parseRailCards('H.\n- Ops | infra | both').cards, [{ title: 'Ops', body: 'infra | both' }]);
 
 console.log('check-slides: ok');

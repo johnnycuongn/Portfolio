@@ -7,7 +7,7 @@ export const MAX_STORED_TURNS = 10;
 
 const VERSION = 1;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const SLIDE_FORMATS = new Set<SlideFormat>(['editorial', 'list', 'experience', 'projects']);
+const SLIDE_FORMATS = new Set<SlideFormat>(['editorial', 'list', 'rail', 'experience', 'projects']);
 
 /** One settled exchange: the question and the slide it produced. */
 export interface AskTurn {
