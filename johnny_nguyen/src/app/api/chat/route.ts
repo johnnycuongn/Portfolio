@@ -1,4 +1,6 @@
 import { after } from 'next/server';
+import { canWriteBack, matchCache, type CacheEntry } from '../../_ai/cache';
+import { loadCacheEntries, serveHitEffects, writeBackAnswer } from '../../_ai/cacheStore';
 import { matchFallback } from '../../_ai/fallback';
 import { limiter } from '../../_ai/limits';
 import { isProviderConfigured, streamCompletion } from '../../_ai/provider';
@@ -12,7 +14,7 @@ import {
   type ChatAction,
   type ChatMessage,
 } from '../../_ai/types';
-import { CHAT } from '../../PORTFOLIO';
+import { ASK, CHAT } from '../../PORTFOLIO';
 
 // fs is used by the knowledge module in a later task, and Node is required for it.
 export const runtime = 'nodejs';
@@ -52,11 +54,22 @@ function clientIp(request: Request): string {
  * Labels come from PORTFOLIO.ts, never from the model — the model chooses
  * *whether* there is an action, never what the button says.
  */
-function actionFor(commands: SentinelCommand[]): ChatAction | null {
-  const command = commands.find((c) => c.kind === 'resume' || c.kind === 'contact');
+function actionFor(commands: SentinelCommand[], surface: PromptSurface): ChatAction | null {
+  const command = commands.find(
+    (c) => c.kind === 'resume' || c.kind === 'contact' || (surface === 'ask' && c.kind === 'contact-form'),
+  );
   if (!command) return null;
   if (command.kind === 'resume') return { label: CHAT.resumeLabel, opens: 'resume' };
-  return { label: CHAT.sendLabel, sends: command.draft };
+  if (command.kind === 'contact-form') return { label: ASK.formTitle, form: { draft: command.draft } };
+  if (command.kind === 'contact') return { label: CHAT.sendLabel, sends: command.draft };
+  return null;
+}
+
+/** Cache entries carry action by name; labels still come from PORTFOLIO. */
+function cacheAction(entry: CacheEntry): ChatAction | null {
+  if (entry.action === 'resume') return { label: CHAT.resumeLabel, opens: 'resume' };
+  if (entry.action === 'contact-form') return { label: ASK.formTitle, form: { draft: '' } };
+  return null;
 }
 
 function recapOf(commands: SentinelCommand[]): string | null {
@@ -77,6 +90,7 @@ function modelResponse(
   question: string,
   surface: PromptSurface,
   sessionId: string,
+  priorFireflyTurns: number,
 ): Response {
   const encoder = new TextEncoder();
   const controllerAbort = new AbortController();
@@ -169,7 +183,7 @@ function modelResponse(
           write({ type: 'token', text: visible });
         }
 
-        const action = actionFor(commands);
+        const action = actionFor(commands, surface);
         if (produced || action) {
           write({
             type: 'done',
@@ -178,13 +192,19 @@ function modelResponse(
             ...(surface === 'ask' ? { recap: recapOf(commands) } : {}),
           });
           if (surface === 'ask') {
+            const recap = recapOf(commands);
+            const writable = canWriteBack({ question, priorFireflyTurns, answer: full, action });
             // after() keeps the invocation alive past the closed stream so the blob
             // write can finish; logging stays a bonus — if the scheduler itself is
             // unavailable, fall back to the plain fire-and-forget rather than throw.
             try {
-              after(() => logAskTurn(sessionId, question, full));
+              after(() => {
+                logAskTurn(sessionId, question, full);
+                if (writable && format) void writeBackAnswer(question, format, full, recap);
+              });
             } catch {
               logAskTurn(sessionId, question, full);
+              if (writable && format) void writeBackAnswer(question, format, full, recap);
             }
           }
         } else {
@@ -239,6 +259,28 @@ export async function POST(request: Request): Promise<Response> {
     return fallbackResponse('', surface);
   }
 
+  if (surface === 'ask') {
+    const hit = matchCache(await loadCacheEntries(), question);
+    if (hit) {
+      // The invocation must outlive the response for the hit bookkeeping and
+      // transcript write — same after() reasoning as the model path.
+      try {
+        after(() => {
+          serveHitEffects(hit);
+          logAskTurn(sessionId, question, hit.answer);
+        });
+      } catch {
+        serveHitEffects(hit);
+        logAskTurn(sessionId, question, hit.answer);
+      }
+      return ndjson([
+        { type: 'format', format: hit.format },
+        { type: 'token', text: hit.answer },
+        { type: 'done', fallback: false, action: cacheAction(hit), recap: hit.recap },
+      ]);
+    }
+  }
+
   const verdict = limiter.check(clientIp(request));
   if (!verdict.allowed) {
     // Operator-facing only — the visitor still gets the same canned answer
@@ -259,5 +301,7 @@ export async function POST(request: Request): Promise<Response> {
     text: message.text.slice(0, MAX_MESSAGE_CHARS),
   }));
 
-  return modelResponse(boundedHistory, question, surface, sessionId);
+  const priorFireflyTurns = history.filter((m) => m.role === 'firefly').length;
+
+  return modelResponse(boundedHistory, question, surface, sessionId, priorFireflyTurns);
 }
