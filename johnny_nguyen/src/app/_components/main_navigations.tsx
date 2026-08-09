@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, FC } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion, useAnimation, useReducedMotion } from 'motion/react';
 import { TbCopy, TbCopyCheckFilled } from 'react-icons/tb';
-import { PORTFOLIO, RESUME } from '../PORTFOLIO';
+import { PORTFOLIO, RESUME, ASK } from '../PORTFOLIO';
 import useResumeViewer from '@/utils/useResumeViewer';
 
 interface TabItemProps {
@@ -163,10 +164,23 @@ const TabItem: FC<TabItemProps> = ({ item }) => {
 
 const NAV_ITEMS = ['Resume', 'Contact'];
 
+/** /ask is a page, not an in-page behavior, so it links rather than buttons. */
+const AskTab = () => (
+  <li className="list-none">
+    <motion.div
+      className="bg-slate-900 text-white rounded select-none flex items-center group"
+      whileHover={{ scale: 1.05 }}
+    >
+      <Link href="/ask" className="px-4 py-2 cursor-pointer">{ASK.navLabel}</Link>
+    </motion.div>
+  </li>
+);
+
 function PortfolioNavBar() {
   return (
     <nav className="fixed top-0 right-0 p-2 z-50">
       <ul className="flex flex-row gap-2">
+        <AskTab />
         {NAV_ITEMS.map((item) => (
           <TabItem key={item} item={item} />
         ))}

@@ -1,4 +1,4 @@
-import { validateDraft, type ContactDraft } from '../_contact/draft';
+import { validateDraft, MAX_CONTACT_MESSAGE_CHARS, type ContactDraft } from '../_contact/draft';
 
 /**
  * The model signals an action by ending its reply with a sentinel line. This
@@ -9,17 +9,27 @@ import { validateDraft, type ContactDraft } from '../_contact/draft';
 
 const CONTACT = '[[CONTACT';
 const RESUME = '[[RESUME';
-const COMMANDS = [CONTACT, RESUME];
+const RECAP = '[[RECAP';
+const COMMANDS = [CONTACT, RESUME, RECAP];
 const LONGEST_COMMAND = Math.max(...COMMANDS.map((command) => command.length));
+
+const MAX_RECAP_CHARS = 300;
 
 export type SentinelCommand =
   | { kind: 'contact'; draft: ContactDraft }
-  | { kind: 'resume' };
+  | { kind: 'contact-form'; draft: string }
+  | { kind: 'resume' }
+  | { kind: 'recap'; text: string };
 
 export interface SentinelSplit {
   /** The reply as the visitor should see it, with any sentinel removed. */
   visible: string;
   command: SentinelCommand | null;
+}
+
+export interface ReplySplit {
+  visible: string;
+  commands: SentinelCommand[];
 }
 
 /** Index of the first known command marker, or -1. */
@@ -88,29 +98,107 @@ function parseContact(body: string): ContactDraft | null {
   return validateDraft(draft) ? draft : null;
 }
 
+function parseCommand(body: string): SentinelCommand | null {
+  if (body === 'RESUME') return { kind: 'resume' };
+
+  if (body.startsWith('RECAP')) {
+    const text = body.slice('RECAP'.length).trim();
+    if (!text || text.length > MAX_RECAP_CHARS) return null;
+    return { kind: 'recap', text };
+  }
+
+  if (body.startsWith('CONTACT')) {
+    const payload = body.slice('CONTACT'.length);
+    const draft = parseContact(payload);
+    if (draft) return { kind: 'contact', draft };
+
+    // Not a valid 3-field draft. Two or more pipes means the model TRIED the
+    // full shape and got it wrong — suppress it rather than leak fields into
+    // a message prefill. Anything else is the /ask form flow: the payload
+    // (possibly empty) is the visitor's drafted message.
+    const pipes = (payload.match(/\|/g) ?? []).length;
+    if (pipes >= 2) return null;
+    const text = payload.trim();
+    if (text.length > MAX_CONTACT_MESSAGE_CHARS) return null;
+    return { kind: 'contact-form', draft: text };
+  }
+
+  return null;
+}
+
 /**
- * Split a finished reply into what the visitor sees and what the UI should do.
- * The first sentinel wins; if it is malformed the whole reply yields no action,
- * rather than searching on for a later one that might parse.
+ * Split a finished reply into visible text and every trailing sentinel. The
+ * visible text still ends at the FIRST marker — nothing after a sentinel is
+ * ever shown — but unlike the original single-command split, parsing walks on
+ * so a reply can carry both a recap and an action. A malformed member is
+ * skipped rather than aborting the walk: the recap failing must not cost the
+ * visitor their resume button, and vice versa.
+ */
+export function splitReply(text: string): ReplySplit {
+  const start = commandStart(text);
+  if (start === -1) return { visible: text, commands: [] };
+
+  const visible = text.slice(0, start).trimEnd();
+  const commands: SentinelCommand[] = [];
+  let rest = text.slice(start);
+
+  while (rest) {
+    const close = rest.indexOf(']]');
+    if (close === -1) break;
+    const command = parseCommand(rest.slice(2, close).trim());
+    if (command) commands.push(command);
+
+    const next = commandStart(rest.slice(close + 2));
+    if (next === -1) break;
+    rest = rest.slice(close + 2 + next);
+  }
+
+  return { visible, commands };
+}
+
+/**
+ * The original single-command view, kept for callers that predate recaps:
+ * the first NON-recap command wins, recaps are invisible to it. If the first
+ * non-recap sentinel is malformed, it suppresses the entire action to preserve
+ * the old "first wins" contract.
  */
 export function splitSentinel(text: string): SentinelSplit {
   const start = commandStart(text);
   if (start === -1) return { visible: text, command: null };
 
   const visible = text.slice(0, start).trimEnd();
-  const rest = text.slice(start);
+  let rest = text.slice(start);
 
-  const close = rest.indexOf(']]');
-  if (close === -1) return { visible, command: null };
+  // Walk through sentinels until we find a non-recap one
+  while (rest) {
+    const close = rest.indexOf(']]');
+    if (close === -1) break;
 
-  // Strip the leading '[[' and the trailing ']]'.
-  const body = rest.slice(2, close).trim();
+    const body = rest.slice(2, close).trim();
+    const command = parseCommand(body);
 
-  if (body === 'RESUME') return { visible, command: { kind: 'resume' } };
+    if (command && command.kind !== 'recap') {
+      // The form kind postdates this legacy view. Under the old contract a
+      // CONTACT without a full valid draft suppressed the action entirely.
+      if (command.kind === 'contact-form') return { visible, command: null };
+      return { visible, command };
+    }
 
-  if (body.startsWith('CONTACT')) {
-    const draft = parseContact(body.slice('CONTACT'.length));
-    return { visible, command: draft ? { kind: 'contact', draft } : null };
+    if (command === null) {
+      // Malformed sentinel: check if it's a recap or something else
+      if (!body.startsWith('RECAP')) {
+        // Malformed non-recap suppresses the whole action (old behavior)
+        return { visible, command: null };
+      }
+      // Malformed recap: skip it and continue
+    } else if (command.kind === 'recap') {
+      // Valid recap: skip it and continue
+    }
+
+    // Move to the next sentinel
+    const next = commandStart(rest.slice(close + 2));
+    if (next === -1) break;
+    rest = rest.slice(close + 2 + next);
   }
 
   return { visible, command: null };

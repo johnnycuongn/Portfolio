@@ -1,14 +1,20 @@
+import { after } from 'next/server';
+import { canWriteBack, matchCache, type CacheEntry } from '../../_ai/cache';
+import { loadCacheEntries, serveHitEffects, writeBackAnswer } from '../../_ai/cacheStore';
 import { matchFallback } from '../../_ai/fallback';
 import { limiter } from '../../_ai/limits';
 import { isProviderConfigured, streamCompletion } from '../../_ai/provider';
-import { heldPrefixLength, splitSentinel } from '../../_ai/sentinel';
+import { heldPrefixLength, splitReply, type SentinelCommand } from '../../_ai/sentinel';
+import { scanLeadingTag, type SlideFormat } from '../../_ai/slides';
+import { logAskTurn } from '../../_ai/transcript';
+import type { PromptSurface } from '../../_ai/knowledge';
 import {
   MAX_HISTORY,
   MAX_MESSAGE_CHARS,
   type ChatAction,
   type ChatMessage,
 } from '../../_ai/types';
-import { CHAT } from '../../PORTFOLIO';
+import { ASK, CHAT } from '../../PORTFOLIO';
 
 // fs is used by the knowledge module in a later task, and Node is required for it.
 export const runtime = 'nodejs';
@@ -18,7 +24,11 @@ export const dynamic = 'force-dynamic';
 // the visitor a dead stream instead of the canned answer this route exists to guarantee.
 export const maxDuration = 30;
 
-const PROVIDER_TIMEOUT_MS = 15_000;
+// The ask surface's system prompt is larger (it carries the cache/slide
+// instructions on top of the knowledge doc) and measured latency there runs
+// 6-13s, occasionally past the old 15s cutoff — dropping a good answer to the
+// canned fallback for no reason. 22s still leaves headroom under maxDuration.
+const PROVIDER_TIMEOUT_MS = 22_000;
 
 const NDJSON_HEADERS = {
   'content-type': 'application/x-ndjson; charset=utf-8',
@@ -30,11 +40,12 @@ function ndjson(lines: object[]): Response {
   return new Response(body, { status: 200, headers: NDJSON_HEADERS });
 }
 
-function fallbackResponse(question: string): Response {
+function fallbackResponse(question: string, surface: PromptSurface): Response {
   const answer = matchFallback(question);
   return ndjson([
+    ...(surface === 'ask' ? [{ type: 'format', format: 'editorial' as SlideFormat }] : []),
     { type: 'token', text: answer.answer },
-    { type: 'done', fallback: true, action: answer.action ?? null },
+    { type: 'done', fallback: true, action: answer.action ?? null, ...(surface === 'ask' ? { recap: null } : {}) },
   ]);
 }
 
@@ -47,10 +58,27 @@ function clientIp(request: Request): string {
  * Labels come from PORTFOLIO.ts, never from the model — the model chooses
  * *whether* there is an action, never what the button says.
  */
-function actionFor(command: ReturnType<typeof splitSentinel>['command']): ChatAction | null {
+function actionFor(commands: SentinelCommand[], surface: PromptSurface): ChatAction | null {
+  const command = commands.find(
+    (c) => c.kind === 'resume' || c.kind === 'contact' || (surface === 'ask' && c.kind === 'contact-form'),
+  );
   if (!command) return null;
   if (command.kind === 'resume') return { label: CHAT.resumeLabel, opens: 'resume' };
-  return { label: CHAT.sendLabel, sends: command.draft };
+  if (command.kind === 'contact-form') return { label: ASK.formTitle, form: { draft: command.draft } };
+  if (command.kind === 'contact') return { label: CHAT.sendLabel, sends: command.draft };
+  return null;
+}
+
+/** Cache entries carry action by name; labels still come from PORTFOLIO. */
+function cacheAction(entry: CacheEntry): ChatAction | null {
+  if (entry.action === 'resume') return { label: CHAT.resumeLabel, opens: 'resume' };
+  if (entry.action === 'contact-form') return { label: ASK.formTitle, form: { draft: '' } };
+  return null;
+}
+
+function recapOf(commands: SentinelCommand[]): string | null {
+  const recap = commands.find((c) => c.kind === 'recap');
+  return recap && recap.kind === 'recap' ? recap.text : null;
 }
 
 /**
@@ -61,7 +89,13 @@ function actionFor(command: ReturnType<typeof splitSentinel>['command']): ChatAc
  * a failure — an empty bubble is exactly the kind of visible break this route
  * exists to avoid.
  */
-function modelResponse(history: ChatMessage[], question: string): Response {
+function modelResponse(
+  history: ChatMessage[],
+  question: string,
+  surface: PromptSurface,
+  sessionId: string,
+  priorFireflyTurns: number,
+): Response {
   const encoder = new TextEncoder();
   const controllerAbort = new AbortController();
   const timeout = setTimeout(() => controllerAbort.abort(), PROVIDER_TIMEOUT_MS);
@@ -80,11 +114,45 @@ function modelResponse(history: ChatMessage[], question: string): Response {
         }
       };
       let produced = false;
+      // The ask surface's first event names the slide; until the leading tag
+      // settles, nothing streams. The hold only lasts while the buffer is a
+      // viable tag prefix, so ordinary prose is never delayed.
+      let format: SlideFormat | null = surface === 'ask' ? null : 'editorial';
+      let formatSent = surface !== 'ask';
+      /** Everything released to the visitor, for the recap-less transcript. */
+      let full = '';
+
+      const sendFormat = (chosen: SlideFormat) => {
+        format = chosen;
+        if (!formatSent) {
+          formatSent = true;
+          if (surface === 'ask') write({ type: 'format', format: chosen });
+        }
+      };
 
       const sendFallback = (handoff: string) => {
+        if (surface === 'ask' && !formatSent) sendFormat('editorial');
         const answer = matchFallback(question);
-        write({ type: 'token', text: handoff + answer.answer });
-        write({ type: 'done', fallback: true, action: answer.action ?? null });
+        const text = handoff + answer.answer;
+        write({ type: 'token', text });
+        write({
+          type: 'done',
+          fallback: true,
+          action: answer.action ?? null,
+          ...(surface === 'ask' ? { recap: null } : {}),
+        });
+        // A fallback on the ask surface is otherwise invisible in transcripts —
+        // the provider failed or the rate limit tripped, so this canned line is
+        // the whole visitor experience and exactly the question worth seeing.
+        // Never write it back to the cache, though: it's stock copy, not a
+        // model answer worth serving to the next visitor.
+        if (surface === 'ask') {
+          try {
+            after(() => logAskTurn(sessionId, question, text));
+          } catch {
+            logAskTurn(sessionId, question, text);
+          }
+        }
       };
 
       try {
@@ -94,9 +162,18 @@ function modelResponse(history: ChatMessage[], question: string): Response {
         // become part of a sentinel, so this stays small.
         let pending = '';
 
-        for await (const text of streamCompletion(history, controllerAbort.signal)) {
+        for await (const text of streamCompletion(history, controllerAbort.signal, surface)) {
           if (!text) continue;
           pending += text;
+
+          // Phase one (ask only): settle the leading tag before releasing.
+          if (format === null) {
+            const scan = scanLeadingTag(pending, false);
+            if (scan.format === null) continue;
+            sendFormat(scan.format);
+            pending = scan.rest;
+            if (!pending) continue;
+          }
 
           const held = heldPrefixLength(pending);
           const release = pending.slice(0, pending.length - held);
@@ -104,22 +181,49 @@ function modelResponse(history: ChatMessage[], question: string): Response {
 
           if (release) {
             produced = true;
+            full += release;
             write({ type: 'token', text: release });
           }
         }
 
-        // Whatever is left is the sentinel, a partial one, or trailing
-        // whitespace. Only now can it be parsed.
-        const { visible, command } = splitSentinel(pending);
+        // The stream can end while the tag was still settling.
+        if (format === null) {
+          const scan = scanLeadingTag(pending, true);
+          sendFormat(scan.format ?? 'editorial');
+          pending = scan.rest;
+        }
+
+        const { visible, commands } = splitReply(pending);
         if (visible) {
           produced = true;
+          full += visible;
           write({ type: 'token', text: visible });
         }
 
-        // An action counts as output: a reply that is *only* a sentinel is a
-        // successful turn, not the empty-bubble case the fallback exists for.
-        if (produced || command) {
-          write({ type: 'done', fallback: false, action: actionFor(command) });
+        const action = actionFor(commands, surface);
+        if (produced || action) {
+          write({
+            type: 'done',
+            fallback: false,
+            action,
+            ...(surface === 'ask' ? { recap: recapOf(commands) } : {}),
+          });
+          if (surface === 'ask') {
+            const recap = recapOf(commands);
+            const writable = canWriteBack({ question, priorFireflyTurns, answer: full, action });
+            // after() keeps the invocation alive past the closed stream so the blob
+            // write can finish; logging stays a bonus — if the scheduler itself is
+            // unavailable, fall back to the plain fire-and-forget rather than throw.
+            try {
+              after(() => {
+                logAskTurn(sessionId, question, full);
+                if (writable && format) void writeBackAnswer(question, format, full, recap);
+              });
+            } catch {
+              logAskTurn(sessionId, question, full);
+              if (writable && format) void writeBackAnswer(question, format, full, recap);
+            }
+          }
         } else {
           sendFallback('');
         }
@@ -146,9 +250,17 @@ function modelResponse(history: ChatMessage[], question: string): Response {
 
 export async function POST(request: Request): Promise<Response> {
   let messages: ChatMessage[] = [];
+  let surface: PromptSurface = 'chat';
+  let sessionId = '';
   try {
-    const body = (await request.json()) as { messages?: ChatMessage[] };
+    const body = (await request.json()) as {
+      messages?: ChatMessage[];
+      surface?: string;
+      sessionId?: string;
+    };
     if (Array.isArray(body.messages)) messages = body.messages;
+    if (body.surface === 'ask') surface = 'ask';
+    if (typeof body.sessionId === 'string') sessionId = body.sessionId;
   } catch {
     // Fall through to the empty-history path below.
   }
@@ -161,7 +273,29 @@ export async function POST(request: Request): Promise<Response> {
   const question = (lastUser?.text ?? '').slice(0, MAX_MESSAGE_CHARS);
 
   if (!question.trim()) {
-    return fallbackResponse('');
+    return fallbackResponse('', surface);
+  }
+
+  if (surface === 'ask') {
+    const hit = matchCache(await loadCacheEntries(), question);
+    if (hit) {
+      // The invocation must outlive the response for the hit bookkeeping and
+      // transcript write — same after() reasoning as the model path.
+      try {
+        after(() => {
+          serveHitEffects(hit);
+          logAskTurn(sessionId, question, hit.answer);
+        });
+      } catch {
+        serveHitEffects(hit);
+        logAskTurn(sessionId, question, hit.answer);
+      }
+      return ndjson([
+        { type: 'format', format: hit.format },
+        { type: 'token', text: hit.answer },
+        { type: 'done', fallback: false, action: cacheAction(hit), recap: hit.recap },
+      ]);
+    }
   }
 
   const verdict = limiter.check(clientIp(request));
@@ -169,11 +303,11 @@ export async function POST(request: Request): Promise<Response> {
     // Operator-facing only — the visitor still gets the same canned answer
     // either way, but the cap that fired is otherwise invisible in the logs.
     console.error('api/chat: rate limited', verdict.reason);
-    return fallbackResponse(question);
+    return fallbackResponse(question, surface);
   }
 
   if (!isProviderConfigured()) {
-    return fallbackResponse(question);
+    return fallbackResponse(question, surface);
   }
 
   // Each message forwarded to the provider is capped independently — the
@@ -184,5 +318,7 @@ export async function POST(request: Request): Promise<Response> {
     text: message.text.slice(0, MAX_MESSAGE_CHARS),
   }));
 
-  return modelResponse(boundedHistory, question);
+  const priorFireflyTurns = history.filter((m) => m.role === 'firefly').length;
+
+  return modelResponse(boundedHistory, question, surface, sessionId, priorFireflyTurns);
 }

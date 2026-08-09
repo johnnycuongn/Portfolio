@@ -20,12 +20,28 @@ There is no test suite. The site is deployed on Vercel.
 
 A single-page personal portfolio site built with Next.js 15 (App Router), React 19, TypeScript, TailwindCSS, and the `motion` animation library (imported as `motion/react`).
 
-- **All site content lives in `src/app/PORTFOLIO.ts`** — name, role, tech tags, resume link, profile links, job timeline entries, and project cards. To change any text or add a job/project, edit this file rather than the components. Entries get `uuid()` ids at module load, so ids are not stable across renders/builds.
+- **All site content lives in `src/app/PORTFOLIO.ts`** — name, role, tech tags, resume link, profile links, job timeline entries, project cards, and the `ASK` block (copy for the `/ask` surface). To change any text or add a job/project, edit this file rather than the components. Entries get `uuid()` ids at module load, so ids are not stable across renders/builds.
 - **`src/app/page.tsx` is the whole page** and drives the core scroll effect: three full-viewport sections are `fixed`-positioned and translated/faded via `useScroll` + `useTransform` keyed off `window.innerHeight`, inside a `300vh` container. A debounced scroll listener snaps to the nearest section. Any new section requires updating the container height (`h-[300vh]`), the `y`/opacity transforms, and the snap math together.
 - `src/app/_components/` holds the presentational pieces (nav bar, Timeline, ProjectCard, ProfilesLinkGroup, MouseAndCat cursor-follow effect). They read data from `PORTFOLIO.ts` directly (e.g. `ProjectCard` looks up a project by id) rather than receiving it as props.
 - `src/utils/` has small hooks: `useMousePosition`, `useDelayLinkOpen` (delays opening a link so a card animation can play), and `wait`.
 - Project card images are loaded from `raw.githubusercontent.com/johnnycuongn/**`, which is allowlisted in `next.config.ts` — new remote image hosts must be added there.
 - Path alias `@/*` maps to `src/*`.
+
+## The /ask route
+
+`/ask` (`src/app/ask/`) is a second surface alongside the scrolling page: a prompt-driven Q&A that answers in full-viewport slides (Editorial/List/Experience/Projects) instead of prose. `src/app/ask/_components/` holds the per-format slide renderers plus `HistoryTrail`; conversation state and streaming live in the `useAsk` hook (`src/utils/useAsk.ts`), with turns persisted to `localStorage` via `src/utils/askStorage.ts` (`loadAsk`/`saveAsk`) — `loadAsk` shape-validates every restored turn so a corrupted or tampered entry is dropped instead of crashing the renderer.
+
+The model's reply protocol is in `src/app/_ai/`: a leading `[[SLIDE LIST|EXPERIENCE|PROJECTS|RAIL]]` tag (parsed by `scanLeadingTag`/`parseSlideBody` in `slides.ts`, tolerant of leading whitespace) picks the slide format, and a trailing `[[RECAP …]]` sentinel — alongside the pre-existing `[[CONTACT]]` and `[[RESUME]]` sentinels in `sentinel.ts` — carries the model's own summary of the turn. Any malformed or unrecognized tag/sentinel is a safe failure to plain Editorial, never an error.
+
+**Answer cache:** `src/app/_ai/cache.ts` provides pure matching logic (normalized phrasing lookup, then keyword scoring with safety thresholds), while `src/app/_ai/cacheStore.ts` handles IO against the Vercel blob backend (`ask-cache/v1.json`, 60s in-memory TTL). The route checks the cache before calling the model and writes back clean first-turn answers (context-free, no actions) via `canWriteBack`. Cache seeds live in `src/app/_ai/seeds.ts` and are installed via `npm run seed:ask --dry` (preview) or `npm run seed:ask` (real write when `BLOB_READ_WRITE_TOKEN` is set); the seeder checks by id before adding. Without the token, caching is silently a no-op.
+
+**Rail format:** `[[SLIDE RAIL]]` renders as `SlideRail`, a horizontally snap-scrolling card component shared with the projects section; parsed by `parseRailCards`, which splits body lines on ` | ` into title/detail pairs.
+
+**Contact on /ask:** When the model emits `[[CONTACT]]`, the route passes an optional draft message to `ContactFormCard`, which owns collecting the visitor's name and email separately—the model never asks for either. A confirm step precedes the send, and all failures degrade to the site's existing mailto link.
+
+`BLOB_READ_WRITE_TOKEN`, if set, enables private per-turn transcript logging for `/ask` only (`src/app/_ai/transcript.ts` — one append-only blob per turn under the visitor's anonymous session id). Without the token it's silently a no-op, so it's optional for local dev.
+
+Pure logic here (the slide/sentinel protocol, storage, etc.) is verified by `npm run check`, which runs the `scripts/check-*.ts` tsx assertion scripts in place of a test suite — add new assertions there rather than introducing one.
 
 ## Design language
 

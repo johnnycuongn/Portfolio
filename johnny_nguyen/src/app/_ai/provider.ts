@@ -1,5 +1,5 @@
 import type { ChatMessage } from './types';
-import { buildSystemPrompt } from './knowledge';
+import { buildSystemPrompt, type PromptSurface } from './knowledge';
 
 export class ProviderError extends Error {}
 
@@ -67,6 +67,7 @@ async function* streamFrom(
   provider: Provider,
   history: ChatMessage[],
   signal: AbortSignal,
+  surface: PromptSurface,
 ): AsyncGenerator<string> {
   const response = await fetch(provider.endpoint, {
     method: 'POST',
@@ -81,7 +82,7 @@ async function* streamFrom(
       temperature: 0.7,
       stream: true,
       messages: [
-        { role: 'system', content: buildSystemPrompt() },
+        { role: 'system', content: buildSystemPrompt(surface) },
         ...history.map((message) => ({
           role: message.role === 'user' ? 'user' : 'assistant',
           content: message.text,
@@ -142,6 +143,7 @@ async function* streamFrom(
 export async function* streamCompletion(
   history: ChatMessage[],
   signal: AbortSignal,
+  surface: PromptSurface = 'chat',
 ): AsyncGenerator<string> {
   const available = PROVIDERS.filter((p) => Boolean(process.env[p.envKey]));
   if (available.length === 0) throw new ProviderError('no chat provider is configured');
@@ -151,7 +153,7 @@ export async function* streamCompletion(
   for (const provider of available) {
     let produced = false;
     try {
-      for await (const text of streamFrom(provider, history, signal)) {
+      for await (const text of streamFrom(provider, history, signal, surface)) {
         produced = true;
         yield text;
       }

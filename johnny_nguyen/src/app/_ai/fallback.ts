@@ -1,5 +1,5 @@
 import type { ChatAction } from './types';
-import { PORTFOLIO, TimelineData, PROJECTS, CHAT } from '../PORTFOLIO';
+import { PORTFOLIO, TimelineData, PROJECTS, CHAT, EDUCATION } from '../PORTFOLIO';
 
 export interface FallbackAnswer {
   id: string;
@@ -39,6 +39,14 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
     id: 'stack',
     triggers: ['stack', 'tech', 'technologies', 'technology', 'languages', 'tools', 'typescript', 'aws', 'skills'],
     answer: `Mostly ${PORTFOLIO.techs.slice(0, 4).join(', ')} these days, with ${PORTFOLIO.techs.slice(4).join(' and ')} underneath. He's worked in React, Angular, .NET and Django too, so he picks up whatever the job needs.`,
+  },
+  {
+    id: 'education',
+    // Sits ahead of 'experience' on purpose: "educational background" matches a
+    // trigger in both, and a tie goes to whichever comes first here.
+    triggers: ['education', 'educational', 'study', 'studied', 'degree', 'university', 'uni',
+      'college', 'graduate', 'graduated', 'honours', 'gpa', 'uts'],
+    answer: `${EDUCATION.degree} at the ${EDUCATION.institution}, finished ${EDUCATION.completed} with ${EDUCATION.honours}. He was already working through most of it.`,
   },
   {
     id: 'experience',

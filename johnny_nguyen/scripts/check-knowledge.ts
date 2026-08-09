@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildSystemPrompt, composeSystemPrompt, extractKnowledgeProse } from '../src/app/_ai/knowledge';
-import { PORTFOLIO, TimelineData, PROJECTS } from '../src/app/PORTFOLIO';
+import { PORTFOLIO, TimelineData, PROJECTS, EDUCATION } from '../src/app/PORTFOLIO';
 
 const prompt = buildSystemPrompt();
 
@@ -15,6 +15,11 @@ for (const project of PROJECTS) {
   assert.ok(prompt.includes(project.title), `prompt missing project "${project.title}"`);
 }
 assert.ok(prompt.includes(PORTFOLIO.email));
+// Education comes from PORTFOLIO.ts, not from the optional knowledge file, so
+// trimming that file can never make the degree unanswerable.
+for (const fact of Object.values(EDUCATION)) {
+  assert.ok(composeSystemPrompt('').includes(fact), `prompt missing education fact "${fact}"`);
+}
 // The model must know the resume is a thing on the page, not a URL it can hand
 // out — there is no longer a link for it to give.
 assert.ok(
