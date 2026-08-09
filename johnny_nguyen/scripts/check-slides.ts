@@ -54,5 +54,24 @@ assert.deepEqual(parseSlideBody('\nHis toolbox.\n\nTypeScript\n- AWS\n'), {
 assert.deepEqual(parseSlideBody('Just this.'), { headline: 'Just this.', items: [] });
 // Empty text degrades to empty strings, never throws.
 assert.deepEqual(parseSlideBody(''), { headline: '', items: [] });
+// A model that dashes its headline still gets a clean one.
+assert.deepEqual(parseSlideBody('- Software Engineer at iMSX\n- ships end to end'), {
+  headline: 'Software Engineer at iMSX',
+  items: ['ships end to end'],
+});
+
+// --- scanLeadingTag: leading whitespace must not defeat the tag --------------
+
+// Leading whitespace must not defeat the tag — models sometimes lead with it.
+assert.deepEqual(scanLeadingTag(' [[SLIDE LIST]]\nHis toolbox.', false), {
+  format: 'list',
+  rest: 'His toolbox.',
+});
+assert.equal(scanLeadingTag('\n[[SLIDE EXPERIENCE]]\nFive years.', false).format, 'experience');
+// Whitespace-only buffer mid-stream: still viable, keep waiting.
+assert.equal(scanLeadingTag('\n', false).format, null);
+assert.equal(scanLeadingTag(' [[SLI', false).format, null);
+// But at stream end it settles editorial with the original text intact.
+assert.deepEqual(scanLeadingTag(' [[SLI', true), { format: 'editorial', rest: ' [[SLI' });
 
 console.log('check-slides: ok');

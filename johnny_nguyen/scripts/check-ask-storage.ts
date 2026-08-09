@@ -48,6 +48,18 @@ const corrupt = memoryStorage();
 corrupt.setItem('ask-v1', '{not json');
 assert.deepEqual(loadAsk(corrupt).turns, []);
 
+// A tampered entry is dropped, not rendered into a crash.
+const tampered = memoryStorage();
+tampered.setItem('ask-v1', JSON.stringify({
+  version: 1, updatedAt: Date.now(), sessionId: newSessionId(),
+  turns: [
+    { id: 'ok', question: 'q', answer: 'a', recap: null, format: 'editorial' },
+    { id: 'bad', question: 'q', answer: 42, recap: null, format: 'editorial' },
+    { id: 'worse', question: 'q', answer: 'a', recap: null, format: 'banana' },
+  ],
+}));
+assert.deepEqual(loadAsk(tampered).turns.map((t) => t.id), ['ok']);
+
 // Only the last 10 turns are kept.
 const many = Array.from({ length: 14 }, (_, i) => ({ ...turn, id: `t${i}` }));
 const overflowing = memoryStorage();

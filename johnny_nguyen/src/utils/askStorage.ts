@@ -7,6 +7,7 @@ export const MAX_STORED_TURNS = 10;
 
 const VERSION = 1;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SLIDE_FORMATS = new Set<SlideFormat>(['editorial', 'list', 'experience', 'projects']);
 
 /** One settled exchange: the question and the slide it produced. */
 export interface AskTurn {
@@ -33,6 +34,23 @@ export function newSessionId(): string {
   return crypto.randomUUID();
 }
 
+// Valid JSON with the wrong field types (e.g. a non-string `answer`) would
+// otherwise sail through JSON.parse and only crash later, deep in the
+// renderer with no error boundary to catch it. Shape-check each turn here so
+// a tampered or corrupted entry is silently dropped instead.
+function isValidTurn(turn: unknown): turn is AskTurn {
+  if (!turn || typeof turn !== 'object') return false;
+  const t = turn as Record<string, unknown>;
+  return (
+    typeof t.id === 'string' &&
+    typeof t.question === 'string' &&
+    typeof t.answer === 'string' &&
+    (typeof t.recap === 'string' || t.recap === null) &&
+    typeof t.format === 'string' &&
+    SLIDE_FORMATS.has(t.format as SlideFormat)
+  );
+}
+
 export function loadAsk(
   storage: StorageLike | null,
   now: number = Date.now(),
@@ -52,7 +70,8 @@ export function loadAsk(
     // that id is a closed book, and reusing it would stitch strangers together.
     if (now - parsed.updatedAt > MAX_AGE_MS) return fresh();
 
-    return { sessionId: parsed.sessionId, turns: parsed.turns.slice(-MAX_STORED_TURNS) };
+    const validTurns = parsed.turns.filter(isValidTurn);
+    return { sessionId: parsed.sessionId, turns: validTurns.slice(-MAX_STORED_TURNS) };
   } catch {
     return fresh();
   }

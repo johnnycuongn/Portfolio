@@ -25,19 +25,29 @@ export interface LeadingTagScan {
  * tokens back delays the visitor's first word, so the buffer is held ONLY
  * while it is still a strict prefix of a known tag; anything else settles as
  * editorial immediately. An unknown or abandoned tag keeps its text — visible
- * words are never eaten by a parse that didn't work out.
+ * words are never eaten by a parse that didn't work out. Leading whitespace
+ * (models sometimes lead with a stray space or newline before the tag) must
+ * not defeat the match, so matching runs against the trimmed-start form; the
+ * ORIGINAL untrimmed buffer is what settles as editorial, since visible text
+ * — including that whitespace — is never eaten.
  */
 export function scanLeadingTag(buffer: string, streamDone: boolean): LeadingTagScan {
+  const lead = buffer.length - buffer.trimStart().length;
+  const trimmed = buffer.slice(lead);
+
   for (const tag of TAG_NAMES) {
-    if (buffer.startsWith(tag)) {
+    if (trimmed.startsWith(tag)) {
       // Skip a single newline after the tag; it frames the tag, not the body.
-      let rest = buffer.slice(tag.length);
+      let rest = trimmed.slice(tag.length);
       if (rest.startsWith('\n')) rest = rest.slice(1);
       return { format: TAGS[tag], rest };
     }
   }
 
-  const viable = TAG_NAMES.some((tag) => tag.startsWith(buffer));
+  // A whitespace-only buffer (trimmed === '') is vacuously a prefix of every
+  // tag — it could still turn out to front one once more tokens arrive, same
+  // as the held-whitespace reasoning in sentinel.ts's holdStart.
+  const viable = TAG_NAMES.some((tag) => tag.startsWith(trimmed));
   if (viable && buffer.length > 0 && !streamDone) return { format: null, rest: '' };
 
   return { format: 'editorial', rest: buffer };
@@ -50,7 +60,10 @@ export function scanLeadingTag(buffer: string, streamDone: boolean): LeadingTagS
  */
 export function parseSlideBody(text: string): { headline: string; items: string[] } {
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-  const [headline = '', ...others] = lines;
+  const [rawHeadline = '', ...others] = lines;
+  // A model sometimes dashes the headline line too, not just the items —
+  // strip the same marker there so the headline never keeps a stray "- ".
+  const headline = rawHeadline.replace(/^[-–—•]\s*/, '');
   const items = others.map((line) => line.replace(/^[-–—•]\s*/, ''));
   return { headline, items };
 }
