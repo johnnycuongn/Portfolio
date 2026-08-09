@@ -71,7 +71,7 @@ const CHAT = {
   name: CHAT_NAME,
   greeting: `Hi — I hang around this page. Ask me anything about ${PORTFOLIO.preferred_name}.`,
   chips: [
-    { label: `Tell me about ${PORTFOLIO.preferred_name}.`, question: `Who is ${PORTFOLIO.preferred_name}? Tell me about ${PORTFOLIO.pronouns}.` },
+    { label: `Tell me about ${PORTFOLIO.preferred_name}`, question: `Who is ${PORTFOLIO.preferred_name}? Tell me about ${PORTFOLIO.pronouns}.` },
     { label: 'His experience', question: `What's ${PORTFOLIO.preferred_name}'s experience?` },
     { label: 'His projects', question: `What are ${PORTFOLIO.preferred_name}'s projects?` },
     { label: 'Resume', question: `Can I see ${PORTFOLIO.preferred_name}'s resume?` },
