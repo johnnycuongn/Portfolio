@@ -19,7 +19,93 @@ npm run start   # serve the production build
 npm run lint    # ESLint
 ```
 
-There is no test suite.
+```bash
+npm run check   # assertion scripts over the pure logic (stands in for a test suite)
+npm run resume  # regenerate the resume page images from public/resume.pdf
+```
+
+There is no test framework. `npm run check` runs the `scripts/check-*.ts` files instead — plain
+`node:assert` scripts covering the parts worth protecting (content shape, prompt assembly, the
+reply protocol, storage, rate limits). New pure logic should get assertions there.
+
+## Architecture
+
+Two surfaces — the scrolling page and `/ask` — share one content file, one API route, and one
+set of canned answers.
+
+```mermaid
+flowchart TB
+  C["PORTFOLIO.ts<br/>all site content"]
+  P["/ — scrolling resume<br/>page.tsx + _components"]
+  A["/ask — slide Q&amp;A<br/>ask/page.tsx + slide renderers"]
+  R["/api/chat<br/>one route, both surfaces"]
+  L{"provider key set,<br/>under rate limit?"}
+  K["_ai/knowledge.ts<br/>system prompt: PORTFOLIO.ts +<br/>PORTFOLIO_AI_knowledge.md"]
+  G1["Gemini — primary"]
+  G2["Groq — understudy"]
+  S["_ai/slides.ts + sentinel.ts<br/>slide tag, action sentinels, recap"]
+  F["_ai/fallback.ts<br/>hand-written answers"]
+  O["NDJSON stream to useChat / useAsk<br/>renders as bubble or slide, saved to localStorage"]
+
+  C --> P
+  C --> A
+  P -->|"visitor asks"| R
+  A -->|"visitor asks"| R
+  R --> L
+  L -->|yes| K
+  L -->|no| F
+  K --> G1
+  G1 -->|streams| S
+  G1 -.->|"fails before a token"| G2
+  G2 -->|streams| S
+  G2 -.->|"fails too"| F
+  S --> O
+  F --> O
+```
+
+Not shown, to keep the diagram to one story: `/api/contact`, which takes the draft the firefly
+assembled and sends it via Resend (falling back to a `mailto:` when unconfigured).
+
+### Folder structure
+
+```
+src/
+├── app/
+│   ├── PORTFOLIO.ts               all site content — edit this, not the components
+│   ├── PORTFOLIO_AI_knowledge.md  extra prose for the firefly (server-only, optional)
+│   ├── page.tsx                   the scrolling resume: all three acts and the snap logic
+│   ├── _components/               presentational pieces for that page + the chat/resume UI
+│   ├── ask/                       the /ask surface: page + per-format slide renderers
+│   ├── _ai/                       prompt, providers, reply protocol, fallbacks, rate limits
+│   ├── _contact/                  draft validation + the Resend mailer
+│   ├── _resume/                   manifest of the generated resume page images
+│   └── api/
+│       ├── chat/                  streams answers as NDJSON — serves both surfaces
+│       └── contact/               sends a visitor's message to Johnny
+└── utils/                         hooks: useAsk, useChat, storage, rail, motion helpers
+
+scripts/                           build-resume.ts + the check-*.ts assertions
+public/resume.pdf                  the downloadable resume; page images beside it
+```
+
+### How an answer gets made
+
+1. **Ask.** `useChat` (firefly popup) or `useAsk` (`/ask`) POSTs the recent history to `/api/chat`,
+   tagged with which surface it came from.
+2. **Guard.** The route checks an in-memory rate limit and that a provider key exists. Either
+   failing skips straight to step 6.
+3. **Prompt.** `knowledge.ts` serialises `PORTFOLIO.ts` into facts, appends
+   `PORTFOLIO_AI_knowledge.md` if it holds real prose, and — for `/ask` only — the slide rules.
+4. **Stream.** Providers are tried in order, Gemini then Groq. One that fails *before* producing
+   text is skipped silently; one that dies mid-sentence keeps its partial answer.
+5. **Parse.** The reply is a small protocol, not free text: a leading `[[SLIDE …]]` tag picks the
+   slide format, trailing `[[RESUME]]`/`[[CONTACT …]]`/`[[RECAP …]]` sentinels are stripped out and
+   turned into buttons and history. Anything malformed degrades to a plain answer, never an error.
+6. **Fall back.** With no key, no quota, or no working provider, `fallback.ts` serves a
+   hand-written answer matched on keywords. The visitor gets a plainer reply — never a broken one.
+
+Turns are persisted to `localStorage` on the client, so a refresh keeps the conversation. Nothing
+about a visitor is stored server-side unless `BLOB_READ_WRITE_TOKEN` is set (see below).
 
 ## How the site is put together
 
@@ -137,21 +223,30 @@ If you're changing more than content, the conventions worth keeping:
 
 ## Deploying
 
-Pushing to the connected branch deploys via Vercel. No environment variables are required — the site runs fine with none set, including the chat (see below) — but `GROQ_API_KEY`/`GROQ_MODEL` can optionally be set in the Vercel project settings to enable live model answers.
+Pushing to the connected branch deploys via Vercel. No environment variables are required — the site runs fine with none set, including the chat (see below) — but a provider key in the Vercel project settings enables live model answers.
 
 ## Chat (Firefly)
 
-The floating firefly in the bottom-right corner answers questions about Johnny.
-It reads `src/app/PORTFOLIO.ts` plus `src/app/_ai/about-johnny.md` (server-only)
-and streams answers from Groq.
+The floating firefly in the bottom-right corner answers questions about Johnny, and `/ask` is the
+same firefly rendered as full-screen slides. Both read `src/app/PORTFOLIO.ts` plus
+`src/app/PORTFOLIO_AI_knowledge.md` (server-only) and stream answers from Gemini, falling back to
+Groq.
 
 Environment variables — set in `.env.local` for development and in the Vercel
-project settings for Production and Preview:
+project settings for Production and Preview. `.env.example` documents each one in full.
 
 | Variable | Required | Notes |
 |---|---|---|
+| `GEMINI_AI_API_KEY` | No | From https://aistudio.google.com/apikey. The primary provider: the whole system prompt is re-sent on every message, and Gemini's free tier has the throughput for it. |
+| `GEMINI_MODEL` | No | Defaults to `gemini-flash-latest`. **Leave it unset.** Pinned versions get retired and start returning 404 — `gemini-2.5-flash` and `gemini-2.5-flash-lite` both have. |
 | `GROQ_API_KEY` | No | From https://console.groq.com. Leave the account without a payment method: the free tier is what keeps this feature from ever generating a bill. |
-| `GROQ_MODEL` | No | Defaults to `llama-3.3-70b-versatile`. Use `llama-3.1-8b-instant` for more free-tier headroom. |
+| `GROQ_MODEL` | No | Defaults to `llama-3.3-70b-versatile`. **Leave it unset.** `llama-3.1-8b-instant` looks like more headroom because its *daily* cap is higher, but the binding limit is tokens per *minute* — 6,000 against 70b's 12,000, on a ~5,800-token prompt. It roughly halves throughput. |
+| `RESEND_API_KEY` | No | Enables the chat's send button to actually email Johnny. Unset falls back to a `mailto:`. |
+| `BLOB_READ_WRITE_TOKEN` | No | `/ask` only. Enables private per-turn transcript logging to Vercel Blob. Unset is a silent no-op. |
+
+If the chat is serving canned answers when you expect live ones, check the Vercel (or dev server)
+logs for `provider stream failed` or `rate limited` — every failure path is logged there, and the
+visitor-facing behaviour is identical whichever one fired.
 
 With no key set, the chat still works — it serves the hand-written fallback
 answers in `src/app/_ai/fallback.ts`. The same thing happens when the daily
