@@ -42,9 +42,13 @@ function ndjson(lines: object[]): Response {
 
 function fallbackResponse(question: string, surface: PromptSurface): Response {
   const answer = matchFallback(question);
+  // "Where is my timeline?" — a canned answer about his experience or projects
+  // still gets the rendered slide, because those slides are built from
+  // PORTFOLIO data and need neither the model nor the cache to draw.
+  const slide = surface === 'ask' ? answer.slide : undefined;
   return ndjson([
-    ...(surface === 'ask' ? [{ type: 'format', format: 'editorial' as SlideFormat }] : []),
-    { type: 'token', text: answer.answer },
+    ...(surface === 'ask' ? [{ type: 'format', format: slide?.format ?? ('editorial' as SlideFormat) }] : []),
+    { type: 'token', text: slide?.headline ?? answer.answer },
     { type: 'done', fallback: true, action: answer.action ?? null, ...(surface === 'ask' ? { recap: null } : {}) },
   ]);
 }
@@ -131,9 +135,14 @@ function modelResponse(
       };
 
       const sendFallback = (handoff: string) => {
-        if (surface === 'ask' && !formatSent) sendFormat('editorial');
         const answer = matchFallback(question);
-        const text = handoff + answer.answer;
+        // A slide-shaped fallback only applies when nothing has streamed yet.
+        // Once a format is out and words are on stage, this is a mid-sentence
+        // handoff appended to the model's own text — the slide is already
+        // chosen and the prose answer is what reads correctly after it.
+        const slide = surface === 'ask' && !formatSent ? answer.slide : undefined;
+        if (surface === 'ask' && !formatSent) sendFormat(slide?.format ?? 'editorial');
+        const text = handoff + (slide?.headline ?? answer.answer);
         write({ type: 'token', text });
         write({
           type: 'done',
