@@ -44,6 +44,22 @@ assert.equal(matchFallback('RESUME!!!').id, 'resume');
 assert.equal(matchFallback('resume').action?.opens, 'resume');
 assert.equal(matchFallback('resume').action?.href, undefined, 'the resume answer must not carry a link');
 
+// The two questions that have a rendered slide behind them must carry it, so
+// /ask draws the timeline and the project rail even when the provider is down
+// and the cache is empty — both slides read PORTFOLIO directly.
+assert.equal(matchFallback("What's Johnny's experience?").slide?.format, 'experience');
+assert.equal(matchFallback('Tell me about his side projects').slide?.format, 'projects');
+for (const entry of FALLBACK_ANSWERS) {
+  if (!entry.slide) continue;
+  // The slide headline sits above the timeline/rail at slide scale — past
+  // roughly a line it stops being a headline and starts wrapping over them.
+  assert.ok(entry.slide.headline.length > 0, `"${entry.id}" slide needs a headline`);
+  assert.ok(
+    entry.slide.headline.length <= 60,
+    `"${entry.id}" slide headline is ${entry.slide.headline.length} chars — too long to sit above a slide`,
+  );
+}
+
 // The catch-all points at a real email.
 assert.ok(CATCH_ALL.answer.includes('@'), 'catch-all should offer the email');
 

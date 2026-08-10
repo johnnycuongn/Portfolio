@@ -1,4 +1,5 @@
 import type { ChatAction } from './types';
+import type { SlideFormat } from './slides';
 import { PORTFOLIO, TimelineData, PROJECTS, CHAT, EDUCATION } from '../PORTFOLIO';
 
 export interface FallbackAnswer {
@@ -7,15 +8,33 @@ export interface FallbackAnswer {
   triggers: string[];
   answer: string;
   action?: ChatAction;
+  /**
+   * /ask only: render this answer as one of the rendered slides instead of
+   * prose. The timeline and the project rail are built from PORTFOLIO data, so
+   * they work with no model and no cache — which is exactly when this canned
+   * answer is what the visitor gets. `headline` replaces `answer` there,
+   * because the slide underneath carries the detail and the words above it
+   * have to stay slide-short.
+   */
+  slide?: { format: SlideFormat; headline: string };
 }
 
 const current = TimelineData[0];
 const projectTitles = PROJECTS.map((p) => p.title);
+// TimelineData is most-recent first, and `year` is a range like "Mar 2022 - Dec
+// 2022" — the first four-digit run in the oldest entry is where he started.
+const firstYear = TimelineData[TimelineData.length - 1].year.match(/\d{4}/)?.[0];
 
 /** Convert a number to English words for small counts (1-9+). */
 function numberToWord(n: number): string {
   const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
   return n < words.length ? words[n] : String(n);
+}
+
+/** Sentence-leading count: "Four", "Three". */
+function countWord(n: number): string {
+  const word = numberToWord(n);
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 const emailAction: ChatAction = { label: 'Email Johnny', href: `mailto:${PORTFOLIO.email}` };
@@ -51,13 +70,21 @@ export const FALLBACK_ANSWERS: FallbackAnswer[] = [
   {
     id: 'experience',
     triggers: ['experience', 'roles', 'jobs', 'job', 'worked', 'background', 'career', 'history'],
-    answer: `${numberToWord(TimelineData.length).charAt(0).toUpperCase() + numberToWord(TimelineData.length).slice(1)} roles so far — ${TimelineData.map((j) => j.company).join(', ')}. Everything from water-quality monitoring for river rangers to enterprise invoicing systems. Ask about any one of them.`,
+    answer: `${countWord(TimelineData.length)} roles so far — ${TimelineData.map((j) => j.company).join(', ')}. Everything from water-quality monitoring for river rangers to enterprise invoicing systems. Ask about any one of them.`,
+    slide: {
+      format: 'experience',
+      headline: `${countWord(TimelineData.length)} roles${firstYear ? `, ${firstYear} to now` : ' so far'}.`,
+    },
   },
   {
     id: 'projects',
     triggers: ['projects', 'project', 'side project', 'side projects', 'built', 'github', 'portfolio'],
     answer: `A few — ${projectTitles.slice(0, 2).join(' and ')}, among others. They're all on his GitHub if you want to poke around the code.`,
     action: { label: 'GitHub', href: 'https://github.com/johnnycuongn' },
+    slide: {
+      format: 'projects',
+      headline: 'Things he built outside work.',
+    },
   },
   {
     id: 'resume',
