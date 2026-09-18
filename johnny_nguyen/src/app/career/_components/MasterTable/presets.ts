@@ -6,7 +6,7 @@
  * decide the day once and the client render the same thing (a `new Date()` inside
  * a row would be a hydration mismatch waiting for midnight).
  *
- * The shape of the screen, per the spec: ONE table. Milestone rows and task rows
+ * The shape of the screen, per the spec: ONE table. Goal, milestone and task rows
  * share it, distinguished by an indent and a type chip, with the goal and its
  * horizon denormalised into columns so reading a row never needs a join. Wins
  * ride along under a synthetic "Unplanned" goal — they are achievements that were
@@ -115,7 +115,15 @@ export const EMPTY_MASTER_TABLE_DATA: MasterTableData = {
 
 /* -------------------------------------------------------------------- the row */
 
-export type RowType = 'milestone' | 'task' | 'win';
+/**
+ * A goal is a row here, not only a column.
+ *
+ * The spec's first principle is "one master table, many views — every unit of work
+ * is a row in one place", and a goal is a unit of work. Leaving it out meant a
+ * ledger holding two goals and no milestones showed an empty master table while
+ * the dashboard showed both, which reads as a bug however it is explained.
+ */
+export type RowType = 'goal' | 'milestone' | 'task' | 'win';
 
 /**
  * One rendered line. Fully denormalised on purpose — the goal title, its horizon
@@ -128,8 +136,8 @@ export type TableRow = {
   /** The underlying record's id — what a mutation route needs. */
   id: string;
   type: RowType;
-  /** 0 draws flush, 1 draws indented under its milestone. Never deeper. */
-  level: 0 | 1;
+  /** Goal → milestone → task, the spec's three levels. One indent step each. */
+  level: 0 | 1 | 2;
 
   goalId: string | null;
   goalTitle: string;
@@ -142,7 +150,8 @@ export type TableRow = {
   horizon: string;
 
   title: string;
-  status: ItemStatus;
+  /** Goals carry their own status set; milestones, tasks and wins carry the other. */
+  status: ItemStatus | GoalStatus;
   competencyId: string;
   competencyName: string;
   effort: Effort | null;
@@ -162,13 +171,19 @@ export type TableRow = {
 
 /* ------------------------------------------------------------------- labelling */
 
-export const STATUS_LABEL: Record<ItemStatus, string> = {
+export const STATUS_LABEL: Record<ItemStatus | GoalStatus, string> = {
   todo: 'Todo',
   doing: 'Doing',
   done: 'Done',
+  // Goal statuses. `done` is shared and means the same thing on both.
+  active: 'Active',
+  paused: 'Paused',
+  backlog: 'Backlog',
+  dropped: 'Dropped',
 };
 
 export const ROW_TYPE_LABEL: Record<RowType, string> = {
+  goal: 'Goal',
   milestone: 'Milestone',
   task: 'Task',
   win: 'Win',
@@ -288,7 +303,20 @@ const GOAL_STATUS_RANK: Record<string, number> = {
   dropped: 4,
 };
 
-const ITEM_STATUS_RANK: Record<ItemStatus, number> = { todo: 0, doing: 1, done: 2 };
+/**
+ * Grouping by status has to order both status sets in one list. Open work first,
+ * finished after it, abandoned last — the same left-to-right reading the rest of
+ * the app uses.
+ */
+const STATUS_RANK: Record<ItemStatus | GoalStatus, number> = {
+  backlog: 0,
+  todo: 1,
+  active: 2,
+  doing: 3,
+  paused: 4,
+  done: 5,
+  dropped: 6,
+};
 
 const HORIZON_TYPE_RANK: Record<string, number> = {
   yearly: 0,
@@ -346,7 +374,7 @@ export function buildTableRows(data: MasterTableData): TableRow[] {
       key: `task:${task.id}`,
       id: task.id,
       type: 'task',
-      level: 1,
+      level: 2,
       goalId: goal.id,
       goalTitle: goal.title,
       goalKind: goal.kind,
@@ -373,6 +401,33 @@ export function buildTableRows(data: MasterTableData): TableRow[] {
 
   for (const goal of goals) {
     const horizon = horizonCell(goal);
+
+    rows.push({
+      key: `goal:${goal.id}`,
+      id: goal.id,
+      type: 'goal',
+      level: 0,
+      goalId: goal.id,
+      goalTitle: goal.title,
+      goalKind: goal.kind,
+      goalStatus: goal.status,
+      horizonType: goal.horizonType,
+      horizonValue: goal.horizonValue,
+      horizon,
+      title: goal.title,
+      status: goal.status as GoalStatus,
+      competencyId: goal.competencyId,
+      competencyName: nameOf(goal.competencyId),
+      effort: null,
+      // Derived from the horizon rather than stored, so it stays in step with it.
+      targetDate: null,
+      completedAt: null,
+      evidenceUrl: null,
+      evidenceNote: null,
+      startedOn: null,
+      milestoneId: null,
+      index: index++,
+    });
     const goalMilestones = [...(milestonesByGoal.get(goal.id) ?? [])].sort(
       (a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title),
     );
@@ -466,7 +521,8 @@ export type SortBy = 'natural' | 'completed-desc';
 
 export type FilterState = {
   search: string;
-  statuses: readonly ItemStatus[];
+  /** Both sets, because goals and their children do not share a status vocabulary. */
+  statuses: readonly (ItemStatus | GoalStatus)[];
   horizonTypes: readonly HorizonType[];
   competencyIds: readonly string[];
   kinds: readonly GoalKind[];
@@ -567,7 +623,7 @@ function groupKeyOf(row: TableRow, groupBy: GroupBy): { key: string; label: stri
       return {
         key: row.status,
         label: STATUS_LABEL[row.status],
-        rank: ITEM_STATUS_RANK[row.status],
+        rank: STATUS_RANK[row.status] ?? 9,
       };
     case 'goal':
     default:
@@ -638,7 +694,7 @@ const GRID_GUTTER = 36;
 export const TABLE_COLUMNS: readonly TableColumn[] = [
   { id: 'goal', label: 'Goal', width: 214, align: 'left', redundantWhen: 'goal' },
   { id: 'horizon', label: 'Horizon', width: 106, align: 'left', redundantWhen: 'horizon' },
-  { id: 'item', label: 'Milestone or task', align: 'left' },
+  { id: 'item', label: 'Goal, milestone or task', align: 'left' },
   { id: 'status', label: 'Status', width: 100, align: 'left' },
   { id: 'competency', label: 'Competency', width: 152, align: 'left' },
   { id: 'effort', label: 'Effort', width: 66, align: 'center' },
@@ -677,7 +733,10 @@ export const PRESETS: readonly Preset[] = [
   {
     id: 'open',
     label: 'Everything open',
-    filters: () => ({ ...EMPTY_FILTERS, statuses: ['todo', 'doing'] }),
+    filters: () => ({
+      ...EMPTY_FILTERS,
+      statuses: ['todo', 'doing', 'active', 'paused', 'backlog'],
+    }),
   },
   {
     id: 'quarter',
@@ -746,7 +805,12 @@ export function chipDefs(competencies: readonly TableCompetency[]): ChipDef[] {
     {
       key: 'statuses',
       label: 'Status',
-      options: ITEM_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] })),
+      // Both vocabularies, deduped: `done` is the one value they share, and
+      // offering it twice would give two chips that filter to the same rows.
+      options: [...new Set<string>([...ITEM_STATUSES, ...GOAL_STATUSES])].map((s) => ({
+        value: s,
+        label: STATUS_LABEL[s as ItemStatus | GoalStatus],
+      })),
     },
     {
       key: 'horizonTypes',

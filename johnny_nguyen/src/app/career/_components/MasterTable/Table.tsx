@@ -112,6 +112,9 @@ export type MasterTableProps = {
  * one condition under which the signal colour is allowed to appear.
  */
 const TYPE_CHIP: Record<RowType, string> = {
+  // A goal is the thing the row beneath it belongs to, so it reads as a heading
+  // rather than as a peer of its own milestones.
+  goal: 'bg-surface-2 font-medium text-ink',
   milestone: 'bg-surface-2 text-ink-muted',
   task: 'border border-rule text-ink-muted',
   win: 'bg-signal-soft text-ink',
@@ -122,12 +125,22 @@ const STATUS_MARK: Record<TableRow['status'], string> = {
   todo: 'border border-rule-strong',
   doing: 'bg-ink-faint',
   done: 'bg-signal',
+  // Goal statuses. Only `done` fills with the signal — nothing unfinished is
+  // coloured, and `dropped` is kept for honesty rather than marked as a failure.
+  backlog: 'border border-rule',
+  active: 'bg-ink-faint',
+  paused: 'border border-rule-strong opacity-60',
+  dropped: 'border border-rule opacity-60',
 };
 
 const STATUS_TEXT: Record<TableRow['status'], string> = {
   todo: 'text-ink-muted',
   doing: 'text-ink',
   done: 'text-ink-muted',
+  backlog: 'text-ink-faint',
+  active: 'text-ink',
+  paused: 'text-ink-faint',
+  dropped: 'text-ink-faint',
 };
 
 const ALIGN: Record<TableColumn['align'], string> = {
@@ -207,7 +220,7 @@ export default function MasterTable({
           <div className="flex min-h-[200px] w-full min-w-0 items-center justify-center border-y border-rule-strong bg-ground px-5 py-12">
             <p className="max-w-[44ch] text-center text-[13px] leading-relaxed text-ink-muted">
               {rows.length === 0
-                ? 'Nothing here yet. The first goal you add shows up as rows on this table.'
+                ? 'Nothing here yet. Add a goal and it shows up as a row, with its milestones and tasks indented beneath it.'
                 : 'No rows match these filters.'}
             </p>
           </div>
@@ -374,7 +387,13 @@ function BodyCell({
       return (
         <td className={base}>
           <div className="flex min-w-0 items-center gap-2.5">
-            {row.level === 1 && <span className="w-[16px] shrink-0" aria-hidden />}
+            {row.level > 0 && (
+              <span
+                className="shrink-0"
+                style={{ width: row.level * 16 }}
+                aria-hidden
+              />
+            )}
             <span
               className={`shrink-0 rounded-[3px] px-1.5 py-[2px] text-[10px] ${DENSE} ${TYPE_CHIP[row.type]}`}
             >

@@ -677,6 +677,7 @@ export function UndoToast({ controller }: { controller: InlineEditController }) 
 
 /** The API collection each row type lives in. */
 const ENTITY: Record<RowType, CareerEntity> = {
+  goal: 'goals',
   milestone: 'milestones',
   task: 'tasks',
   win: 'wins',
@@ -738,7 +739,7 @@ function evidenceBody(
  * so untick-then-undo restores the exact status and date the row had rather
  * than guessing at `todo`.
  *
- * It lives in the wide "Milestone or task" column rather than the 100px Status
+ * It lives in the wide "Goal, milestone or task" column rather than the 100px Status
  * column, because a 44px tap target and a status dropdown cannot both fit in
  * 82px of usable width, and of the two it is the tick that has to be reachable
  * with a thumb.

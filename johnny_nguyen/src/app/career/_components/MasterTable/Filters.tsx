@@ -197,7 +197,7 @@ export default function Filters({ filters, onChange, competencies, today }: Filt
       <div className="flex flex-col gap-1">
         <h1 className="type-display text-[26px] text-ink sm:text-[30px]">Master table</h1>
         <p className="max-w-[62ch] text-[13px] text-ink-muted">
-          Every milestone and task in one place. The dashboard and the achievement log are
+          Every goal, milestone and task in one place. The dashboard and the achievement log are
           filtered views of this.
         </p>
       </div>
