@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 
 import MasterTable from '@/app/career/_components/MasterTable/Table';
 import { loadDashboard } from '@/app/career/_queries';
+import TopBar from '@/app/career/_components/TopBar';
 import { requireAdmin } from '@/lib/career/auth';
 
 import CodeGate from '../_components/CodeGate';
@@ -35,7 +36,9 @@ export default async function AdminTablePage() {
   const load = await loadDashboard();
 
   return (
-    <main className={shell}>
+    <>
+      <TopBar />
+      <main className={shell}>
       {load.ok ? (
         // `editors` is the seam for the inline-edit half of this screen: pass a
         // slot per cell (see `TableEditors` in Table.tsx) and that cell becomes
@@ -46,6 +49,7 @@ export default async function AdminTablePage() {
           The table is not connected to its database yet.
         </p>
       )}
-    </main>
+      </main>
+    </>
   );
 }

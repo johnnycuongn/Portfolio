@@ -20,6 +20,7 @@ import AchievementTimeline, {
   AchievementsSummary,
 } from '@/app/career/_components/Achievements/Timeline';
 import { loadDashboard } from '@/app/career/_queries';
+import TopBar from '@/app/career/_components/TopBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,18 +37,23 @@ export default async function CareerAchievementsPage() {
 
   if (!load.ok) {
     return (
-      <main className={SHELL}>
+      <>
+        <TopBar />
+        <main className={SHELL}>
         <p className="rounded-[10px] border border-rule-strong bg-surface px-5 py-8 text-center text-[13px] text-ink-faint">
           The achievement log is not connected to its database yet.
         </p>
-      </main>
+        </main>
+      </>
     );
   }
 
   const { competencies, goals, milestones, wins, today } = load.data;
 
   return (
-    <main className={SHELL}>
+    <>
+      <TopBar />
+      <main className={SHELL}>
       {/* `today` comes from the server so the 90-day window cannot be computed
           differently on a phone in another timezone than it was on render. */}
       <AchievementsProvider source={{ competencies, goals, milestones, wins, today }}>
@@ -73,6 +79,7 @@ export default async function CareerAchievementsPage() {
           <AchievementTimeline editable={false} />
         </div>
       </AchievementsProvider>
-    </main>
+      </main>
+    </>
   );
 }

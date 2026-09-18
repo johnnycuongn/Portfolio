@@ -270,10 +270,17 @@ body:has(.ledger) { background: var(--ground); }
   font-feature-settings: 'tnum' 1, 'cv05' 1;
 }
 
-/* The readout: oversized figures, stretched. This is the one loud element. */
+/* The readout: oversized figures. This is the one loud element.
+   Proportional figures, deliberately, and the one place in the app that opts out
+   of tabular. Tabular forces every digit onto the advance width of the widest,
+   which is what a column needs and what a lone hero figure does not: a single
+   `0` then gets maximum width and reads as a letter O. Nothing here lines up
+   with anything, so there is nothing to pay that cost for. */
 .ledger .type-readout {
-  font-variation-settings: 'wdth' 112, 'wght' 500;
-  letter-spacing: -0.02em;
+  font-variant-numeric: proportional-nums;
+  font-feature-settings: 'tnum' 0;
+  font-variation-settings: 'wdth' 104, 'wght' 500;
+  letter-spacing: -0.022em;
   line-height: 0.92;
 }
 

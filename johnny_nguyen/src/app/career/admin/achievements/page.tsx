@@ -19,6 +19,7 @@ import AchievementTimeline, {
   AchievementsSummary,
 } from '@/app/career/_components/Achievements/Timeline';
 import { loadDashboard } from '@/app/career/_queries';
+import TopBar from '@/app/career/_components/TopBar';
 import { requireAdmin } from '@/lib/career/auth';
 
 import CodeGate from '../_components/CodeGate';
@@ -45,18 +46,23 @@ export default async function AdminAchievementsPage() {
 
   if (!load.ok) {
     return (
-      <main className={SHELL}>
+      <>
+        <TopBar />
+        <main className={SHELL}>
         <p className="rounded-[10px] border border-rule-strong bg-surface px-5 py-8 text-center text-[13px] text-ink-faint">
           The achievement log is not connected to its database yet.
         </p>
-      </main>
+        </main>
+      </>
     );
   }
 
   const { competencies, goals, milestones, wins, today } = load.data;
 
   return (
-    <main className={SHELL}>
+    <>
+      <TopBar />
+      <main className={SHELL}>
       <AchievementsProvider source={{ competencies, goals, milestones, wins, today }}>
         <div className="flex flex-col gap-[22px]">
           <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
@@ -80,6 +86,7 @@ export default async function AdminAchievementsPage() {
           <AchievementTimeline editable />
         </div>
       </AchievementsProvider>
-    </main>
+      </main>
+    </>
   );
 }

@@ -12,6 +12,7 @@
 import type { Metadata } from 'next';
 
 import MasterTable from '@/app/career/_components/MasterTable/Table';
+import TopBar from '@/app/career/_components/TopBar';
 import { loadDashboard } from '@/app/career/_queries';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,9 @@ export default async function CareerTablePage() {
   const load = await loadDashboard();
 
   return (
-    <main className="bg-ground px-4 py-6 text-ink sm:px-10 sm:py-[26px]">
+    <>
+      <TopBar />
+      <main className="bg-ground px-4 py-6 text-ink sm:px-10 sm:py-[26px]">
       {load.ok ? (
         // `today` comes from the server so the 21-day Doing marker and the
         // "This quarter" preset cannot disagree between render and hydration.
@@ -36,6 +39,7 @@ export default async function CareerTablePage() {
           The table is not connected to its database yet.
         </p>
       )}
-    </main>
+      </main>
+    </>
   );
 }

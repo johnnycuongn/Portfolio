@@ -36,18 +36,17 @@
 import type { SummaryVM } from './Zones/derive';
 
 /**
- * Archivo's width axis runs to 125 and `type-readout` was asking for 112, which
- * is the difference between a figure that is present and a figure that is loud.
- * The strip takes the top of the axis and a heavier weight with it; the class in
- * theme.css stays where it is, because everything else that uses it is smaller
- * and 125 at 20px reads as a mistake rather than as emphasis.
+ * Loudness here comes from scale and weight, not from width. Archivo's width
+ * axis runs to 125, and taking the top of it stretched the figures until a `0`
+ * read as a letter O — at 74px the counters open up far faster than they do at
+ * text size. Width now moves only a little above normal; the size does the work.
  *
  * Scale, width and weight are the only three levers used here. Colour is not one
  * of them — the accent belongs to work that is finished, and borrowing it for
  * emphasis would make an unfinished number look done.
  */
-const LOUD = { fontVariationSettings: "'wdth' 125, 'wght' 600" } as const;
-const READING = { fontVariationSettings: "'wdth' 112, 'wght' 500" } as const;
+const LOUD = { fontVariationSettings: "'wdth' 108, 'wght' 620" } as const;
+const READING = { fontVariationSettings: "'wdth' 100, 'wght' 500" } as const;
 
 function Cell({
   children,
