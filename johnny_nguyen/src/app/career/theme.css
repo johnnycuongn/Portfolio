@@ -1,0 +1,337 @@
+/**
+ * Ledger theming.
+ *
+ * Every theme is the same two decisions: a neutral ramp, and one signal colour.
+ * That is not a stylistic preference — the spec's rule is that colour marks what
+ * you have *done*, never what you owe, so the palette only ever needs a quiet
+ * ground plus one hue for progress fills, heatmap shading and completed entries.
+ * Keeping each theme to (neutrals + signal) makes it structurally impossible for
+ * a theme to start colouring unfinished work.
+ *
+ * `--signal-2` exists for the one two-ink theme (riso). Everywhere else it is the
+ * same value as `--signal`, so a component can blend the two unconditionally and
+ * get a single colour in five themes out of six.
+ *
+ * Tokens sit on `:root` rather than on `.ledger` so that <body> can read
+ * `--ground` for the overscroll colour; a token defined on a descendant is not
+ * visible to its own ancestor. Nothing here repaints the portfolio, which shares
+ * this Next app — it never references these names, and the two properties that
+ * would leak (`color-scheme`, the body background) are scoped to `.ledger` and
+ * to `body:has(.ledger)` below.
+ *
+ * The active theme is an attribute on <html>, set before first paint by the
+ * inline script in layout.tsx.
+ */
+
+:root {
+  /* ---- Graphite (light, default) — cool neutrals, blueprint blue --------- */
+  --ground: #fafafb;
+  --surface: #ffffff;
+  --surface-2: #f4f5f7;
+  --rule: #e4e5e9;
+  --rule-strong: #d2d4da;
+
+  --ink: #1a1b1e;
+  --ink-muted: #5f626b;
+  --ink-faint: #6a6d76;
+  --ink-on-signal: #ffffff;
+
+  --signal: #2d4ecc;
+  --signal-2: #2d4ecc;
+  --signal-soft: #e7ebfa;
+  --signal-hover: #2440ad;
+
+  --track: #ecedf1;
+  --overdue: #b4252a;
+  --overdue-soft: #fbeaea;
+
+  /* Pace dots — the one place the app uses a green/amber/red triad, because
+     "how is this going" is a three-way judgement the signal colour cannot carry.
+     A goal with no horizon has no pace and draws no dot at all: it is not
+     "neutral amber", it has no opinion. The light themes share these; carbon
+     overrides them because a mid-tone green on a near-black ground is mud. */
+  --pace-ahead: #3f7d4e;
+  --pace-slightly-behind: #a9741f;
+  --pace-behind: #b4252a;
+
+  /* Heatmap: five buckets, 0 = a day with nothing on it. Never red, never a
+     miss — an empty day is just empty. */
+  --heat-0: #edeef1;
+  --heat-1: #c9d3f4;
+  --heat-2: #94a8ea;
+  --heat-3: #5a78dc;
+  --heat-4: #2d4ecc;
+
+  --focus: var(--signal);
+  --shadow-panel: 0 1px 2px rgba(16, 18, 24, 0.04);
+}
+
+/* ---- Carbon (dark) ------------------------------------------------------ */
+[data-theme='carbon'] {
+  --ground: #0f1013;
+  --surface: #16181d;
+  --surface-2: #1d2027;
+  --rule: #272a32;
+  --rule-strong: #363a44;
+
+  --ink: #e8e9ec;
+  --ink-muted: #9ba0ab;
+  --ink-faint: #8a8f99;
+  --ink-on-signal: #0f1013;
+
+  --signal: #5b7cff;
+  --signal-2: #5b7cff;
+  --signal-soft: #1c2440;
+  --signal-hover: #7691ff;
+
+  --track: #23262e;
+  --overdue: #e0565b;
+  --overdue-soft: #2a171a;
+
+  --pace-ahead: #5fbf75;
+  --pace-slightly-behind: #d9a441;
+  --pace-behind: #e0565b;
+
+  --heat-0: #191c22;
+  --heat-1: #23306b;
+  --heat-2: #33489f;
+  --heat-3: #4463d4;
+  --heat-4: #5b7cff;
+
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- Sage (light) ------------------------------------------------------- */
+[data-theme='sage'] {
+  --ground: #f0f5ec;
+  --surface: #fbfdf9;
+  --surface-2: #e7efe1;
+  --rule: #d9e3d2;
+  --rule-strong: #c2cfb9;
+
+  --ink: #1b1e1b;
+  --ink-muted: #5c6259;
+  --ink-faint: #696f66;
+  --ink-on-signal: #ffffff;
+
+  --signal: #2f7d5b;
+  --signal-2: #2f7d5b;
+  --signal-soft: #e2efe8;
+  --signal-hover: #256548;
+
+  --track: #e1eada;
+  --overdue: #a8412f;
+  --overdue-soft: #f7e9e5;
+
+  --heat-0: #e9ece4;
+  --heat-1: #c6e0d1;
+  --heat-2: #8fc4ab;
+  --heat-3: #56a480;
+  --heat-4: #2f7d5b;
+
+}
+
+/* ---- Harbour (light) ---------------------------------------------------- */
+[data-theme='harbour'] {
+  --ground: #e9f1f7;
+  --surface: #f9fcfe;
+  --surface-2: #dde9f1;
+  --rule: #cfdde7;
+  --rule-strong: #b6c8d5;
+
+  --ink: #171c21;
+  --ink-muted: #566069;
+  --ink-faint: #626c75;
+  --ink-on-signal: #ffffff;
+
+  --signal: #1c6b72;
+  --signal-2: #1c6b72;
+  --signal-soft: #ddedee;
+  --signal-hover: #14565c;
+
+  --track: #d8e5ed;
+  --overdue: #a63d33;
+  --overdue-soft: #f6e8e6;
+
+  --heat-0: #e6ebef;
+  --heat-1: #c2dee0;
+  --heat-2: #8bc3c7;
+  --heat-3: #4e9aa1;
+  --heat-4: #1c6b72;
+
+}
+
+/* ---- Iris (light) ------------------------------------------------------- */
+[data-theme='iris'] {
+  --ground: #f4eefb;
+  --surface: #fdfaff;
+  --surface-2: #ebe2f6;
+  --rule: #ded2ee;
+  --rule-strong: #c6b7dd;
+
+  --ink: #1b1a20;
+  --ink-muted: #5e5a6b;
+  --ink-faint: #6b6778;
+  --ink-on-signal: #ffffff;
+
+  --signal: #5b4bc4;
+  --signal-2: #5b4bc4;
+  --signal-soft: #e9e6f7;
+  --signal-hover: #4a3cab;
+
+  --track: #e6dcf3;
+  --overdue: #ac3b52;
+  --overdue-soft: #f8e8ec;
+
+  --heat-0: #eae8ef;
+  --heat-1: #d3cdee;
+  --heat-2: #ada2e0;
+  --heat-3: #7f70d2;
+  --heat-4: #5b4bc4;
+
+}
+
+/* ---- Riso (fun) — two fluorescent inks on warm paper --------------------
+   Pink is the first ink and carries progress on its own. Blue is the second,
+   and the heatmap's top bucket is the two of them overprinted, which is where
+   the violet comes from. Misregistration is deliberate but rationed: it appears
+   on hover and on the completion flourish, never at rest, because a permanent
+   1px offset on every heading is noise to read past on a screen you scan. */
+[data-theme='riso'] {
+  --ground: #fdf6e6;
+  --surface: #fffdf6;
+  --surface-2: #f7eed8;
+  --rule: #e6dcc2;
+  --rule-strong: #d0c3a4;
+
+  --ink: #1f1b18;
+  --ink-muted: #635b52;
+  --ink-faint: #6d6558;
+  --ink-on-signal: #fffdf8;
+
+  --signal: #d4176a;
+  --signal-2: #0a5fff;
+  --signal-soft: #fcdde9;
+  --signal-hover: #b30f58;
+
+  --track: #f0e6cf;
+  --overdue: #c01d38;
+  --overdue-soft: #ffe3e7;
+
+  --heat-0: #f0eadc;
+  --heat-1: #ffd1e2;
+  --heat-2: #ff8fb8;
+  --heat-3: #e0529f;
+  --heat-4: #8b3fd4;
+
+}
+
+/* The riso flourish: a completed entry separates into its two inks for a beat,
+   then registers. Only in riso, and only on entry. */
+@keyframes ledger-misregister {
+  0% {
+    text-shadow:
+      -1.5px 0 0 var(--signal),
+      1.5px 0 0 var(--signal-2);
+  }
+  100% {
+    text-shadow: none;
+  }
+}
+
+[data-theme='riso'] .ledger .riso-register {
+  animation: ledger-misregister 620ms ease-out both;
+}
+
+[data-theme='riso'] .ledger .riso-hover:hover {
+  text-shadow:
+    -1px 0 0 var(--signal),
+    1px 0 0 var(--signal-2);
+}
+
+/* color-scheme is per-element, and must not reach the portfolio. */
+.ledger { color-scheme: light; }
+[data-theme='carbon'] .ledger { color-scheme: dark; }
+
+body:has(.ledger) { background: var(--ground); }
+
+/* ---- Type ---------------------------------------------------------------
+   One family, Archivo, with its variable width axis doing the expressive work.
+   Width is how you fit tabular data, so the personality is load-bearing rather
+   than decorative: expanded for the big readouts, normal for prose, condensed
+   for dense table columns.
+
+   Tabular figures are on by default across the app — the spec asks for numbers
+   that line up in columns, and getting that from the text face is what removes
+   any need for a monospace face for small data labels. */
+.ledger {
+  font-family: var(--font-ledger), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+}
+
+/* The readout: oversized figures, stretched. This is the one loud element. */
+.ledger .type-readout {
+  font-variation-settings: 'wdth' 112, 'wght' 500;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+
+/* Section and screen headings. */
+.ledger .type-display {
+  font-variation-settings: 'wdth' 108, 'wght' 550;
+  letter-spacing: -0.015em;
+}
+
+/* Dense columns — the master table, timeline row names, axis labels. */
+.ledger .type-condensed {
+  font-variation-settings: 'wdth' 88, 'wght' 450;
+}
+
+/* Compatibility shims. Components written before the redesign reach for
+   Tailwind's `font-serif` and `font-mono`; both now resolve to Archivo so a
+   stale usage degrades to the right family rather than to Georgia or Menlo. */
+.ledger .font-serif {
+  font-family: var(--font-ledger), ui-sans-serif, system-ui, sans-serif;
+  font-variation-settings: 'wdth' 108, 'wght' 550;
+  letter-spacing: -0.015em;
+}
+
+.ledger .font-mono {
+  font-family: var(--font-ledger), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'wdth' 92, 'wght' 450;
+}
+
+.ledger :is(input, select, textarea, button) {
+  font-family: inherit;
+}
+
+/* ---- The thread ---------------------------------------------------------
+   The timeline and the heatmap are both indexed on time, so they share one
+   today-line rather than drawing two. The line is painted by each panel at the
+   same x offset and this class keeps them visually continuous across the gap
+   between the two panels. */
+.ledger .thread-gap {
+  background-image: linear-gradient(to bottom, var(--rule-strong), var(--rule-strong));
+  background-repeat: no-repeat;
+  background-size: 1px 100%;
+}
+
+/* ---- Quality floor ------------------------------------------------------ */
+.ledger :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ledger *,
+  .ledger *::before,
+  .ledger *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

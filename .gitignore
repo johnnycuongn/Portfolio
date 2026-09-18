@@ -4,3 +4,6 @@
 .serena
 .vercel
 .env*
+*.pem
+.playwright-mcp
+crit
