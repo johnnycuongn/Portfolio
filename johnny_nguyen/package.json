@@ -13,9 +13,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts && tsx scripts/check-storage.ts && tsx scripts/check-limits.ts && tsx scripts/check-knowledge.ts && tsx scripts/check-resume.ts && tsx scripts/check-sentinel.ts && tsx scripts/check-provider.ts && tsx scripts/check-slides.ts && tsx scripts/check-ask-storage.ts && tsx scripts/check-transcript.ts && tsx scripts/check-cache.ts && tsx scripts/check-seeds.ts && tsx scripts/check-blob-token.ts && tsx scripts/check-career-auth.ts && tsx scripts/check-career-logic.ts"
+    "check": "tsx scripts/check-content.ts && tsx scripts/check-fallback.ts && tsx scripts/check-storage.ts && tsx scripts/check-limits.ts && tsx scripts/check-knowledge.ts && tsx scripts/check-resume.ts && tsx scripts/check-sentinel.ts && tsx scripts/check-provider.ts && tsx scripts/check-slides.ts && tsx scripts/check-ask-storage.ts && tsx scripts/check-transcript.ts && tsx scripts/check-cache.ts && tsx scripts/check-seeds.ts && tsx scripts/check-blob-token.ts && tsx scripts/check-career-auth.ts && tsx scripts/check-career-logic.ts && tsx scripts/check-nav.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
     "@neondatabase/serverless": "^1.1.0",
     "@reduxjs/toolkit": "^2.5.1",
     "@vercel/analytics": "^2.0.1",

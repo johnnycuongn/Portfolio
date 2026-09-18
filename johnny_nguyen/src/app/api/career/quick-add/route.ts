@@ -13,9 +13,12 @@
  * the URL.
  */
 
+import Anthropic from '@anthropic-ai/sdk';
 import { eq } from 'drizzle-orm';
+import { after } from 'next/server';
 import { v4 as uuid } from 'uuid';
 
+import { notifyClaudeParseFailure } from '@/lib/career/alerts';
 import { adminOnly } from '@/lib/career/auth';
 import { isProviderConfigured } from '@/app/_ai/provider';
 import { db } from '@/lib/db';
@@ -62,8 +65,39 @@ const PROVIDERS = [
   },
 ] as const;
 
-/** A wrong guess costs one field. A slow guess costs the whole point of quick-add. */
-const PARSE_TIMEOUT_MS = 8000;
+/**
+ * Claude is tried before the two above. It is a better parser for this job — the
+ * task is mostly judgement (is this a win or a goal? is there really a why-line in
+ * there, or am I inventing one?) rather than extraction — and the other two stay
+ * underneath it on purpose.
+ *
+ * The credential here is an OAuth token, which is short-lived by nature: it will
+ * expire, and when it does this call starts failing. That is precisely why Gemini
+ * and Groq are still in the list. An expired token costs a slightly worse parse,
+ * not a broken quick-add, and the form still opens either way.
+ *
+ * OAuth tokens travel as `Authorization: Bearer` with a beta header, not as
+ * `x-api-key` — swapping this for a console API key later is a credential change
+ * AND a header change. The SDK reads ANTHROPIC_AUTH_TOKEN from the environment on
+ * its own; it is named explicitly here so the dependency is greppable.
+ */
+const CLAUDE = {
+  model: 'claude-sonnet-5',
+  /** The level asked for: enough judgement for the call, not enough to be slow. */
+  effort: 'medium',
+  envKey: 'ANTHROPIC_AUTH_TOKEN',
+  oauthBeta: 'oauth-2025-04-20',
+} as const;
+
+/**
+ * A wrong guess costs one field. A slow guess costs the whole point of quick-add.
+ *
+ * Twelve rather than eight: Sonnet runs adaptive thinking, so a parse is a little
+ * slower than the flash models were, and the budget has to cover the fall-through
+ * to Gemini underneath it. The box opens immediately regardless — this is the wait
+ * before the fields fill in, not a wait before anything appears.
+ */
+const PARSE_TIMEOUT_MS = 12000;
 
 function systemPrompt(today: string): string {
   const competencyList = COMPETENCY_SEED.map((c) => `${c.id} (${c.name})`).join(', ');
@@ -109,6 +143,42 @@ function extractJson(raw: string): unknown {
   }
 }
 
+/**
+ * Claude, one shot. Returns null on any failure so the caller falls through to the
+ * OpenAI-shaped providers below — an expired OAuth token looks like any other
+ * failure here, which is the intended behaviour.
+ *
+ * `max_tokens` is well above what the JSON needs because adaptive thinking spends
+ * part of the same budget; a tight cap truncates the object mid-field rather than
+ * failing cleanly, and a truncated parse is worse than no parse.
+ */
+async function askClaude(text: string, today: string, signal: AbortSignal): Promise<unknown> {
+  const client = new Anthropic({
+    authToken: process.env[CLAUDE.envKey],
+    defaultHeaders: { 'anthropic-beta': CLAUDE.oauthBeta },
+  });
+
+  const response = await client.messages.create(
+    {
+      model: CLAUDE.model,
+      max_tokens: 4000,
+      system: systemPrompt(today),
+      messages: [{ role: 'user', content: text }],
+      output_config: { effort: CLAUDE.effort },
+    },
+    { signal },
+  );
+
+  // A safety decline is a legitimate outcome, not an exception. Fall through.
+  if (response.stop_reason === 'refusal') return null;
+
+  const parts = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text);
+
+  return parts.length > 0 ? extractJson(parts.join('')) : null;
+}
+
 /** One provider, one shot. Returns null on any failure — the caller falls through. */
 async function askProvider(
   provider: (typeof PROVIDERS)[number],
@@ -150,21 +220,46 @@ async function askProvider(
  */
 async function parse(text: string, today: string): Promise<{ draft: QuickAddDraft; parsed: boolean }> {
   const fallback = fallbackDraft(text, today);
-  if (!isProviderConfigured()) return { draft: fallback, parsed: false };
+  const hasClaude = Boolean(process.env[CLAUDE.envKey]);
+  // `isProviderConfigured` only knows about Gemini and Groq, and it is shared with
+  // /ask — so ask it, but do not let it veto a Claude-only deployment.
+  if (!hasClaude && !isProviderConfigured()) return { draft: fallback, parsed: false };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PARSE_TIMEOUT_MS);
 
+  /** A parse that produced no title is not a parse. Keep the typed text. */
+  const accept = (raw: unknown) => {
+    const draft = coerceDraft(raw, today);
+    if (!draft.title.trim()) draft.title = fallback.title;
+    return { draft, parsed: true as const };
+  };
+
   try {
+    if (hasClaude) {
+      try {
+        const raw = await askClaude(text, today, controller.signal);
+        if (raw) return accept(raw);
+      } catch (error) {
+        // An expired OAuth token lands here as a 401 and is indistinguishable
+        // from any other failure, by design — log it and drop to the next
+        // provider rather than failing the request.
+        if (!controller.signal.aborted) {
+          console.error('career/quick-add: claude parse failed', error);
+          // `after` runs once the response has been sent, so the owner's alert
+          // costs the person typing nothing. The alert is throttled internally;
+          // calling it on every failure is the intended usage.
+          after(() => notifyClaudeParseFailure(error));
+        }
+      }
+    }
+
     for (const provider of PROVIDERS) {
       if (!process.env[provider.envKey]) continue;
       try {
         const raw = await askProvider(provider, text, today, controller.signal);
         if (!raw) continue;
-        const draft = coerceDraft(raw, today);
-        // A parse that produced no title is not a parse. Keep the typed text.
-        if (!draft.title.trim()) draft.title = fallback.title;
-        return { draft, parsed: true };
+        return accept(raw);
       } catch (error) {
         if (controller.signal.aborted) break;
         console.error(`career/quick-add: ${provider.name} parse failed`, error);

@@ -103,7 +103,11 @@ export default function TopBar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-rule bg-ground/95 backdrop-blur-sm">
+      {/* Opaque, not frosted. At 95% the page scrolled visibly through the bar —
+          barely noticeable on the light themes, obvious on carbon, where content
+          showed through behind the wordmark. A blur behind an opaque background
+          does nothing, so it goes too. */}
+      <header className="sticky top-0 z-30 border-b border-rule bg-ground">
         <div className="flex h-14 items-center justify-between gap-3 px-4 sm:h-16 sm:gap-6 sm:px-8 lg:px-10">
           {/*
             `self-stretch` is load-bearing, not tidiness. The row above is

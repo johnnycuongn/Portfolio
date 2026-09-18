@@ -34,7 +34,15 @@ import {
 import { useRouter } from 'next/navigation';
 import { v4 as uuid } from 'uuid';
 
-import type { Effort, IsoDate, ItemStatus } from '@/lib/career/types';
+import type {
+  CompetencyId,
+  Effort,
+  GoalKind,
+  GoalStatus,
+  HorizonType,
+  IsoDate,
+  ItemStatus,
+} from '@/lib/career/types';
 
 /* ------------------------------------------------------------------ endpoints */
 
@@ -121,6 +129,26 @@ export type MilestoneRef = {
   completedAt?: IsoDate | null;
 };
 
+/**
+ * What the goal header's edit form can change. Every field is optional and only
+ * the ones that actually differ are sent, so a PATCH never re-asserts a value it
+ * was not asked to touch — `horizonType` in particular re-derives all four
+ * horizon columns server-side.
+ */
+export type GoalPatch = {
+  title?: string;
+  why?: string;
+  status?: GoalStatus;
+  kind?: GoalKind;
+  competencyId?: CompetencyId;
+  horizonType?: HorizonType;
+  horizonValue?: string | null;
+  customStart?: IsoDate | null;
+  customEnd?: IsoDate | null;
+  closeNote?: string | null;
+  parentGoalId?: string | null;
+};
+
 export type ToastTone = 'neutral' | 'done' | 'error';
 
 export type GoalToast = {
@@ -162,18 +190,38 @@ export type GoalMutations = {
   saveEvidence: (milestoneId: string, evidence: EvidenceValue) => Promise<boolean>;
 
   reorderMilestones: (orderedIds: readonly string[]) => Promise<boolean>;
+
+  /**
+   * Edit the goal itself. Resolves to null when it saved, and to the sentence to
+   * show the person when it did not — the server's own wording where there is
+   * one, so `close_note_required` and `nesting_too_deep` read as instructions
+   * rather than as a crash. The same sentence also goes to the toast.
+   */
+  updateGoal: (patch: GoalPatch) => Promise<string | null>;
 };
 
 /* ------------------------------------------------------------------ transport */
 
+/**
+ * A failed write, carrying both halves of what the route said: `code` is the
+ * machine slug (`evidence_required`, `close_note_required`, `nesting_too_deep`),
+ * `message` is the sentence the route wrote for a human to read.
+ */
 class ApiError extends Error {
   constructor(
     readonly status: number,
+    readonly code: string,
     message: string,
   ) {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+function stringField(payload: unknown, key: string): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const value = (payload as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
 async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promise<unknown> {
@@ -185,7 +233,7 @@ async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promi
       body: JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, 'offline');
+    throw new ApiError(0, 'offline', 'offline');
   }
 
   let payload: unknown = null;
@@ -196,11 +244,11 @@ async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promi
   }
 
   if (!response.ok) {
-    const error =
-      payload && typeof payload === 'object' && 'error' in payload
-        ? String((payload as { error: unknown }).error)
-        : 'failed';
-    throw new ApiError(response.status, error);
+    const code = stringField(payload, 'error') ?? 'failed';
+    // Every career route answers `{ ok: false, error, message }`, and `message`
+    // is already written for a person. Keeping it is what turns a rule like
+    // "dropping a goal needs a reason" into something you can act on.
+    throw new ApiError(response.status, code, stringField(payload, 'message') ?? code);
   }
   return payload;
 }
@@ -211,8 +259,14 @@ function humanError(error: unknown): string {
     if (error.status === 401) return 'Editing is locked. Unlock with the code to make changes.';
     if (error.status === 0) return 'No connection — nothing was saved.';
     if (error.status === 409) return 'This list changed somewhere else. Reload to see it.';
-    if (error.status === 400 && error.message === 'evidence_required')
+    if (error.code === 'evidence_required')
       return 'A milestone needs a link or a note before it can be marked reached.';
+    // A 4xx from these routes is a rule being explained, not a fault: the route
+    // wrote the sentence, so show that rather than a generic apology. A 5xx is
+    // not explicable, so it falls through.
+    if (error.status >= 400 && error.status < 500 && error.message !== error.code) {
+      return error.message;
+    }
   }
   return 'That did not save, so nothing changed.';
 }
@@ -483,6 +537,40 @@ export function useGoalMutations({
     [goalId, run],
   );
 
+  /* -------------------------------------------------------------- the goal */
+
+  /**
+   * Written out rather than routed through `run` because the header's form needs
+   * the failure *sentence* back, not just a false — the server rules it can trip
+   * (a drop with no reason, a parent that is already a child) are corrections you
+   * make in the form you are standing in, so they have to appear beside the field.
+   */
+  const updateGoal = useCallback<GoalMutations['updateGoal']>(
+    async (patch) => {
+      if (!editable) {
+        const message = 'This view is read-only.';
+        showToast(message, 'error', null);
+        return message;
+      }
+      if (Object.keys(patch).length === 0) return null;
+
+      mark(goalId, true);
+      try {
+        await send(CAREER_API.goal(goalId), 'PATCH', patch);
+        router.refresh();
+        showToast('Goal saved.', 'neutral', null);
+        return null;
+      } catch (error) {
+        const message = humanError(error);
+        showToast(message, 'error', null);
+        return message;
+      } finally {
+        mark(goalId, false);
+      }
+    },
+    [editable, goalId, mark, router, showToast],
+  );
+
   return {
     editable,
     isPending,
@@ -499,6 +587,7 @@ export function useGoalMutations({
     reopenMilestone,
     saveEvidence,
     reorderMilestones,
+    updateGoal,
   };
 }
 

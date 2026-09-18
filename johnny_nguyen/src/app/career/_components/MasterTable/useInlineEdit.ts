@@ -30,7 +30,12 @@ import { useRouter } from 'next/navigation';
 
 /* -------------------------------------------------------------------- types */
 
-export type CareerEntity = 'goals' | 'milestones' | 'tasks';
+/**
+ * `wins` is here because the master table is the one screen that holds every row
+ * type at once — a win is a row on it like any other, and a column you can read
+ * but not correct is worse than no column.
+ */
+export type CareerEntity = 'goals' | 'milestones' | 'tasks' | 'wins';
 
 /** A request the client can replay verbatim to undo a write. Built by the API. */
 export type UndoStep = {
@@ -143,7 +148,7 @@ function isRow(value: unknown): value is Record<string, unknown> & { id: string 
  */
 function rowsIn(payload: Record<string, unknown>): Array<Record<string, unknown> & { id: string }> {
   const rows: Array<Record<string, unknown> & { id: string }> = [];
-  for (const key of ['goal', 'milestone', 'task']) {
+  for (const key of ['goal', 'milestone', 'task', 'win']) {
     const value = payload[key];
     if (isRow(value)) rows.push(value);
   }

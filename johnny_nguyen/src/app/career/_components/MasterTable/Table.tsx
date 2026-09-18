@@ -306,7 +306,7 @@ export default function MasterTable({
             )}
             <span className={empty ? undefined : 'hidden sm:inline'}>
               {editable
-                ? 'Status, competency and evidence edit in place and save on blur'
+                ? 'Tick to complete, or edit any cell in place — every change can be undone'
                 : 'Read-only view'}
             </span>
           </p>
@@ -440,7 +440,16 @@ function BodyCell({
 
     case 'evidence':
     default:
-      return <EvidenceCell className={`${base} truncate`} row={row} slot={editors?.evidence} />;
+      // `truncate` is `overflow:hidden`, which would clip this cell's editor —
+      // its error popover hangs below the row and its input is allowed to grow
+      // past the column. So the clip belongs to the read-only rendering only.
+      return (
+        <EvidenceCell
+          className={`${base} ${editors?.evidence ? '' : 'truncate'}`}
+          row={row}
+          slot={editors?.evidence}
+        />
+      );
   }
 }
 

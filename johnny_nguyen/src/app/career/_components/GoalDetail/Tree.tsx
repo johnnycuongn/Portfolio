@@ -28,8 +28,10 @@
  * Indentation is deliberately shallow (20px per level, two levels deep at most) so a
  * task title still has most of a 390px screen to itself.
  *
- * Presentational. Every control here is inert; the agent that owns mutations
- * injects real ones through `milestoneSlots` / `taskSlots`, keyed by row id.
+ * Presentational. Every control here is inert; the live ones arrive through
+ * `milestoneSlots` / `milestoneAddSlots` / `taskSlots`, keyed by row id, and
+ * `footer` under the whole tree. `GoalDetailScreen` fills those from `AddForms`
+ * when the screen is editable, and passes nothing at all when it is not.
  */
 
 import { useState, type ReactNode } from 'react';
@@ -70,6 +72,14 @@ export type TreeProps = {
   editable: boolean;
   /** Per-row editing controls, keyed by milestone id. Rendered at the end of the row. */
   milestoneSlots?: Record<string, ReactNode>;
+  /**
+   * Keyed by milestone id, and rendered directly under that milestone's task list,
+   * inside the same indent — in practice an "add a task" affordance. Separate from
+   * `milestoneSlots` only because the thing that *extends* a list belongs at the
+   * foot of the list, and the thing that *closes out* the milestone belongs below
+   * the evidence it is about to be filed with.
+   */
+  milestoneAddSlots?: Record<string, ReactNode>;
   /** Per-row editing controls, keyed by task id. */
   taskSlots?: Record<string, ReactNode>;
   /** Anything that belongs under the whole tree — an "add milestone" control, say. */
@@ -262,6 +272,7 @@ function MilestoneEntry({
   onToggle,
   editable,
   slot,
+  addSlot,
   taskSlots,
 }: {
   milestone: TreeMilestone;
@@ -270,6 +281,7 @@ function MilestoneEntry({
   onToggle: () => void;
   editable: boolean;
   slot?: ReactNode;
+  addSlot?: ReactNode;
   taskSlots?: Record<string, ReactNode>;
 }) {
   // motion/react writes inline transforms, which the global reduced-motion rule
@@ -343,6 +355,7 @@ function MilestoneEntry({
                     taskSlots={taskSlots}
                     empty="No tasks under this one yet."
                   />
+                  {addSlot ? <div className="mt-1">{addSlot}</div> : null}
                 </div>
                 <Evidence milestone={milestone} />
                 {!hasEvidence && !reached && editable ? (
@@ -372,6 +385,7 @@ export default function Tree({
   tasks,
   editable,
   milestoneSlots,
+  milestoneAddSlots,
   taskSlots,
   footer,
 }: TreeProps) {
@@ -412,6 +426,7 @@ export default function Tree({
               onToggle={() => toggle(milestone.id)}
               editable={editable}
               slot={milestoneSlots?.[milestone.id]}
+              addSlot={milestoneAddSlots?.[milestone.id]}
               taskSlots={taskSlots}
             />
           ))}

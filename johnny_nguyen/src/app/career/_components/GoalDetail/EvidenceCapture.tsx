@@ -223,8 +223,20 @@ function useEvidenceForm({
   // never a blocked submit — the note alone is perfectly good evidence.
   const linkLooksWrong = url.trim().length > 0 && normalized === null;
 
+  // A submit that cannot proceed has to say so. The button is disabled, so the
+  // mouse never reaches this — but Cmd/Ctrl+Enter calls `submit` directly, and a
+  // keyboard user pressing it on an empty form was getting silence.
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    if (ready) setBlocked(false);
+  }, [ready]);
+
   const submit = useCallback(() => {
-    if (!ready || busy) return;
+    if (busy) return;
+    if (!ready) {
+      setBlocked(true);
+      return;
+    }
     void onSubmit({
       evidenceUrl: normalized,
       // A non-URL typed into the link box is not thrown away — it is prose, so it
@@ -251,7 +263,7 @@ function useEvidenceForm({
     [onCancel, submit],
   );
 
-  return { url, setUrl, note, setNote, ready, linkLooksWrong, submit, onKeyDown };
+  return { url, setUrl, note, setNote, ready, blocked, linkLooksWrong, submit, onKeyDown };
 }
 
 function leadFor(mode: 'capture' | 'edit'): string {
@@ -267,11 +279,14 @@ function leadFor(mode: 'capture' | 'edit'): string {
 function Hint({
   id,
   error,
+  blocked = false,
   linkLooksWrong,
   ready,
 }: {
   id: string;
   error: string | null;
+  /** A submit was attempted that could not proceed — state the rule, not silence. */
+  blocked?: boolean;
   linkLooksWrong: boolean;
   ready: boolean;
 }) {
@@ -282,6 +297,10 @@ function Hint({
            this screen that is genuinely wrong — it is not an unfinished item being
            coloured, which is the rule the token exists to protect. */
         <span className="text-overdue">{error}</span>
+      ) : blocked && !ready ? (
+        <span className="text-overdue">
+          A link or a note — one of the two is what makes this worth keeping.
+        </span>
       ) : linkLooksWrong ? (
         <span className="text-ink-muted">Not a link, so it will be kept with the note.</span>
       ) : ready ? (
@@ -375,6 +394,7 @@ export default function EvidenceCapture({
         <Hint
           id={`${uid}-hint`}
           error={error}
+          blocked={form.blocked}
           linkLooksWrong={form.linkLooksWrong}
           ready={form.ready}
         />
@@ -523,6 +543,7 @@ function SheetForm({
           <Hint
             id={`${uid}-hint`}
             error={error}
+            blocked={form.blocked}
             linkLooksWrong={form.linkLooksWrong}
             ready={form.ready}
           />

@@ -8,7 +8,7 @@
 
 import type { Metadata } from 'next';
 
-import MasterTable from '@/app/career/_components/MasterTable/Table';
+import { EditableMasterTable } from '@/app/career/_components/MasterTable/EditableCell';
 import { loadDashboard } from '@/app/career/_queries';
 import TopBar from '@/app/career/_components/TopBar';
 import { requireAdmin } from '@/lib/career/auth';
@@ -40,10 +40,11 @@ export default async function AdminTablePage() {
       <TopBar />
       <main className={shell}>
       {load.ok ? (
-        // `editors` is the seam for the inline-edit half of this screen: pass a
-        // slot per cell (see `TableEditors` in Table.tsx) and that cell becomes
-        // editable in place. Absent, every cell renders read-only.
-        <MasterTable data={load.data} editable today={load.data.today} />
+        // The same `MasterTable` the public tree renders, with a slot filled per
+        // editable cell (see `TableEditors` in Table.tsx) and an undo toast under
+        // it. `/career/table` imports the table directly and passes no slots, so
+        // it keeps no mutation code at all.
+        <EditableMasterTable data={load.data} today={load.data.today} />
       ) : (
         <p className="rounded-[10px] border border-rule-strong bg-surface px-5 py-8 text-center text-[13px] text-ink-faint">
           The table is not connected to its database yet.

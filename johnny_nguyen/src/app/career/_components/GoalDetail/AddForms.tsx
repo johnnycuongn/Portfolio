@@ -32,14 +32,26 @@
  * in as `slots`, which a server component cannot give client state to.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
-import { EFFORTS, type Effort } from '@/lib/career/types';
+import {
+  COMPETENCY_SEED,
+  EFFORTS,
+  GOAL_KINDS,
+  GOAL_STATUSES,
+  HORIZON_TYPES,
+  type CompetencyId,
+  type Effort,
+  type GoalKind,
+  type GoalStatus,
+  type HorizonType,
+} from '@/lib/career/types';
 import { EvidenceSheet, MilestoneFlourish } from './EvidenceCapture';
 import {
   moveInOrder,
   useGoalEditing,
+  type GoalPatch,
   type GoalToast,
   type MilestoneRef,
   type TaskRef,
@@ -79,6 +91,483 @@ const outlinedClass =
   'inline-flex h-11 shrink-0 items-center justify-center rounded-[3px] border border-rule-strong ' +
   'px-4 text-[14px] font-medium text-ink transition-colors hover:bg-surface-2 ' +
   'disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:px-3.5 sm:text-[12.5px]';
+
+/* A `<select>` keeps the platform picker, which on a phone is a wheel the thumb
+   already knows. Styled to the same rule-and-baseline as the text fields so the
+   goal form reads as one row of fields rather than as a control panel. */
+const selectClass = `${fieldClass} w-full appearance-none pr-8`;
+
+const areaClass =
+  'box-border w-full resize-none rounded-[3px] border border-rule bg-surface px-3 py-2.5 ' +
+  'text-[16px] leading-[1.5] text-ink outline-none transition-colors ' +
+  'placeholder:text-ink-faint focus:border-signal disabled:bg-surface-2 ' +
+  'disabled:text-ink-faint sm:text-[13px]';
+
+/* ------------------------------------------------------------- edit the goal */
+
+/** Everything the header form can read off a goal row. A `Goal` satisfies it. */
+export type EditableGoal = {
+  id: string;
+  title: string;
+  why: string;
+  status: string;
+  kind: string;
+  competencyId: string;
+  horizonType: string;
+  horizonValue: string | null;
+  customStart: string | null;
+  customEnd: string | null;
+  parentGoalId: string | null;
+  closeNote: string | null;
+};
+
+export type GoalEditFormProps = {
+  goal: EditableGoal;
+  /**
+   * Goals this one may roll up into: top-level ones, never itself. Omit to leave
+   * the picker out entirely — which is what the screen does when this goal already
+   * has goals rolling up into it, because nesting is one level only.
+   */
+  parentOptions?: readonly { id: string; title: string }[];
+};
+
+const HORIZON_LABEL: Record<HorizonType, string> = {
+  none: 'No horizon',
+  monthly: 'A month',
+  quarterly: 'A quarter',
+  yearly: 'A year',
+  custom: 'Custom dates',
+};
+
+const HORIZON_PLACEHOLDER: Partial<Record<HorizonType, string>> = {
+  monthly: '2026-09',
+  quarterly: '2026-Q3',
+  yearly: '2026',
+};
+
+const STATUS_LABEL: Record<GoalStatus, string> = {
+  active: 'Active',
+  paused: 'Paused',
+  backlog: 'Backlog',
+  done: 'Done',
+  dropped: 'Dropped',
+};
+
+function sentence(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/** One labelled field. Label above at condensed weight, control below, full width. */
+function FormField({
+  htmlFor,
+  label,
+  hint,
+  className,
+  children,
+}: {
+  htmlFor: string;
+  label: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex min-w-0 flex-col gap-1.5 ${className ?? ''}`}>
+      <label htmlFor={htmlFor} className="type-condensed text-[11.5px] text-ink-faint">
+        {label}
+      </label>
+      {children}
+      {hint ? <span className="text-[11.5px] leading-[1.4] text-ink-faint">{hint}</span> : null}
+    </div>
+  );
+}
+
+type Draft = {
+  title: string;
+  why: string;
+  status: GoalStatus;
+  kind: GoalKind;
+  competencyId: CompetencyId;
+  horizonType: HorizonType;
+  horizonValue: string;
+  customStart: string;
+  customEnd: string;
+  parentGoalId: string;
+  closeNote: string;
+};
+
+function draftFrom(goal: EditableGoal): Draft {
+  return {
+    title: goal.title,
+    why: goal.why,
+    status: goal.status as GoalStatus,
+    kind: goal.kind as GoalKind,
+    competencyId: goal.competencyId as CompetencyId,
+    horizonType: goal.horizonType as HorizonType,
+    horizonValue: goal.horizonValue ?? '',
+    customStart: goal.customStart ?? '',
+    customEnd: goal.customEnd ?? '',
+    parentGoalId: goal.parentGoalId ?? '',
+    closeNote: goal.closeNote ?? '',
+  };
+}
+
+/**
+ * The goal's own fields, edited in place on the masthead.
+ *
+ * Closed, it is one line of text — the header is for reading the goal, not for
+ * administering it, and a form parked open under the why-line would turn the one
+ * piece of prose in the app into a form's caption. Open, it is the masthead's own
+ * fields in the masthead's own order: title, why, then the four facts the strip
+ * above classifies the goal by.
+ *
+ * Two server rules can only be discovered by trying, so this shows what the server
+ * said rather than a generic failure: a goal cannot go to Dropped without a reason,
+ * and goals nest one level only. The reason field appears the moment you pick
+ * Dropped, so the usual path never trips the rule in the first place.
+ */
+export function GoalEditForm({ goal, parentOptions }: GoalEditFormProps) {
+  const reduced = useReducedMotion();
+  const uid = useId();
+  const { editable, isPending, updateGoal } = useGoalEditing();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Draft>(() => draftFrom(goal));
+  const [error, setError] = useState<string | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  // A refresh after some other write re-renders this with new server values; the
+  // form is the goal's fields, so it follows them while it is closed.
+  const saved = useMemo(() => draftFrom(goal), [goal]);
+  useEffect(() => {
+    if (!open) setDraft(saved);
+  }, [open, saved]);
+
+  useEffect(() => {
+    if (open) titleRef.current?.focus();
+  }, [open]);
+
+  if (!editable) return null;
+
+  const pending = isPending(goal.id);
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
+    setDraft((current) => ({ ...current, [key]: value }));
+
+  const horizonChanged =
+    draft.horizonType !== saved.horizonType ||
+    draft.horizonValue !== saved.horizonValue ||
+    draft.customStart !== saved.customStart ||
+    draft.customEnd !== saved.customEnd;
+
+  const showCloseNote =
+    draft.status === 'dropped' || draft.status === 'done' || saved.closeNote.length > 0;
+  const missingReason = draft.status === 'dropped' && !draft.closeNote.trim();
+  const dirty =
+    draft.title.trim() !== saved.title ||
+    draft.why.trim() !== saved.why ||
+    draft.status !== saved.status ||
+    draft.kind !== saved.kind ||
+    draft.competencyId !== saved.competencyId ||
+    draft.parentGoalId !== saved.parentGoalId ||
+    draft.closeNote.trim() !== saved.closeNote ||
+    horizonChanged;
+
+  const ready = dirty && draft.title.trim().length > 0 && draft.why.trim().length > 0;
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!ready || pending) return;
+    setError(null);
+
+    const patch: GoalPatch = {};
+    if (draft.title.trim() !== saved.title) patch.title = draft.title.trim();
+    if (draft.why.trim() !== saved.why) patch.why = draft.why.trim();
+    if (draft.status !== saved.status) patch.status = draft.status;
+    if (draft.kind !== saved.kind) patch.kind = draft.kind;
+    if (draft.competencyId !== saved.competencyId) patch.competencyId = draft.competencyId;
+    if (draft.closeNote.trim() !== saved.closeNote) patch.closeNote = draft.closeNote.trim() || null;
+    if (parentOptions && draft.parentGoalId !== saved.parentGoalId) {
+      patch.parentGoalId = draft.parentGoalId || null;
+    }
+
+    // One horizon field touched re-sends the whole horizon, because the server
+    // re-derives all four columns from the type. Leaving the value blank on a
+    // period horizon is deliberate: the server then fills in the current period.
+    if (horizonChanged) {
+      patch.horizonType = draft.horizonType;
+      if (draft.horizonType === 'custom') {
+        patch.customStart = draft.customStart || null;
+        patch.customEnd = draft.customEnd || null;
+      } else if (draft.horizonType !== 'none') {
+        patch.horizonValue = draft.horizonValue.trim() || null;
+      }
+    }
+
+    const failure = await updateGoal(patch);
+    if (failure) setError(failure);
+    else setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={`${ghostClass} -ml-2`}>
+        <Pencil />
+        Edit this goal
+      </button>
+    );
+  }
+
+  return (
+    <motion.form
+      onSubmit={submit}
+      initial={reduced ? false : { opacity: 0, y: -3 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18 }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          setOpen(false);
+          setError(null);
+        }
+      }}
+      aria-label="Edit this goal"
+      className="flex flex-col gap-4 border-t border-rule-strong pt-4"
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormField htmlFor={`${uid}-title`} label="Title" className="sm:col-span-2">
+          <input
+            ref={titleRef}
+            id={`${uid}-title`}
+            value={draft.title}
+            onChange={(event) => set('title', event.target.value)}
+            disabled={pending}
+            className={`w-full ${fieldClass}`}
+          />
+        </FormField>
+
+        <FormField
+          htmlFor={`${uid}-why`}
+          label="Why"
+          hint="The sentence that decides whether you push or kill this in six months."
+          className="sm:col-span-2"
+        >
+          <textarea
+            id={`${uid}-why`}
+            rows={2}
+            value={draft.why}
+            onChange={(event) => set('why', event.target.value)}
+            disabled={pending}
+            className={areaClass}
+          />
+        </FormField>
+
+        <FormField htmlFor={`${uid}-status`} label="Status">
+          <select
+            id={`${uid}-status`}
+            value={draft.status}
+            onChange={(event) => set('status', event.target.value as GoalStatus)}
+            disabled={pending}
+            className={selectClass}
+          >
+            {GOAL_STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {STATUS_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField htmlFor={`${uid}-kind`} label="Kind">
+          <select
+            id={`${uid}-kind`}
+            value={draft.kind}
+            onChange={(event) => set('kind', event.target.value as GoalKind)}
+            disabled={pending}
+            className={selectClass}
+          >
+            {GOAL_KINDS.map((value) => (
+              <option key={value} value={value}>
+                {sentence(value)}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField htmlFor={`${uid}-competency`} label="Competency" className="sm:col-span-2">
+          <select
+            id={`${uid}-competency`}
+            value={draft.competencyId}
+            onChange={(event) => set('competencyId', event.target.value as CompetencyId)}
+            disabled={pending}
+            className={selectClass}
+          >
+            {COMPETENCY_SEED.map((competency) => (
+              <option key={competency.id} value={competency.id}>
+                {competency.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField
+          htmlFor={`${uid}-horizon`}
+          label="Horizon"
+          hint={
+            draft.horizonType === 'none'
+              ? 'No horizon means no pace line, and this goal is never late.'
+              : undefined
+          }
+        >
+          <select
+            id={`${uid}-horizon`}
+            value={draft.horizonType}
+            onChange={(event) => {
+              const next = event.target.value as HorizonType;
+              setDraft((current) => ({
+                ...current,
+                horizonType: next,
+                // A quarter string in a monthly goal is a CHECK violation waiting
+                // to happen, so changing the type drops the old value. Left blank,
+                // the server fills in the period we are actually in.
+                horizonValue: next === saved.horizonType ? saved.horizonValue : '',
+              }));
+            }}
+            disabled={pending}
+            className={selectClass}
+          >
+            {HORIZON_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {HORIZON_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        {draft.horizonType !== 'none' && draft.horizonType !== 'custom' ? (
+          <FormField
+            htmlFor={`${uid}-period`}
+            label="Period"
+            hint="Leave it empty for the one we are in."
+          >
+            <input
+              id={`${uid}-period`}
+              value={draft.horizonValue}
+              onChange={(event) => set('horizonValue', event.target.value)}
+              disabled={pending}
+              spellCheck={false}
+              placeholder={HORIZON_PLACEHOLDER[draft.horizonType]}
+              className={`type-condensed w-full ${fieldClass}`}
+            />
+          </FormField>
+        ) : null}
+
+        {draft.horizonType === 'custom' ? (
+          <div className="flex min-w-0 gap-3">
+            <FormField htmlFor={`${uid}-start`} label="Opens" className="flex-1">
+              <input
+                id={`${uid}-start`}
+                type="date"
+                value={draft.customStart}
+                onChange={(event) => set('customStart', event.target.value)}
+                disabled={pending}
+                className={`type-condensed w-full ${fieldClass}`}
+              />
+            </FormField>
+            <FormField htmlFor={`${uid}-end`} label="Closes" className="flex-1">
+              <input
+                id={`${uid}-end`}
+                type="date"
+                value={draft.customEnd}
+                onChange={(event) => set('customEnd', event.target.value)}
+                disabled={pending}
+                className={`type-condensed w-full ${fieldClass}`}
+              />
+            </FormField>
+          </div>
+        ) : null}
+
+        {parentOptions ? (
+          <FormField
+            htmlFor={`${uid}-parent`}
+            label="Rolls up into"
+            hint="Goals nest one level only."
+            className="sm:col-span-2"
+          >
+            <select
+              id={`${uid}-parent`}
+              value={draft.parentGoalId}
+              onChange={(event) => set('parentGoalId', event.target.value)}
+              disabled={pending}
+              className={selectClass}
+            >
+              <option value="">Nothing — this one stands on its own</option>
+              {parentOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.title}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        ) : null}
+
+        {showCloseNote ? (
+          <FormField
+            htmlFor={`${uid}-close`}
+            label={draft.status === 'dropped' ? 'Dropped because' : 'Closing note'}
+            hint={
+              draft.status === 'dropped'
+                ? 'Required. What you learned by abandoning it is the reason the row stays.'
+                : undefined
+            }
+            className="sm:col-span-2"
+          >
+            <textarea
+              id={`${uid}-close`}
+              rows={2}
+              value={draft.closeNote}
+              onChange={(event) => set('closeNote', event.target.value)}
+              disabled={pending}
+              className={areaClass}
+            />
+          </FormField>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-3 border-t border-rule pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="m-0 min-w-0 text-[12px] leading-[1.45]" aria-live="polite">
+          {error ? (
+            /* `overdue` is the palette's only red, and a refused write is the one
+               thing on this screen that is genuinely wrong. */
+            <span className="text-overdue">{error}</span>
+          ) : missingReason ? (
+            <span className="text-ink-muted">
+              Dropping it needs a reason before this will save.
+            </span>
+          ) : dirty ? (
+            <span className="text-ink-faint">Nothing is written until you save.</span>
+          ) : (
+            <span className="text-ink-faint">No changes yet.</span>
+          )}
+        </p>
+        <div className="flex items-center gap-1 sm:shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setError(null);
+            }}
+            disabled={pending}
+            className={ghostClass}
+          >
+            Cancel
+          </button>
+          <button type="submit" disabled={!ready || pending} className={filledClass}>
+            {pending ? 'Saving' : 'Save goal'}
+          </button>
+        </div>
+      </div>
+    </motion.form>
+  );
+}
 
 /* ------------------------------------------------------------ add a milestone */
 
@@ -202,6 +691,11 @@ export type AddTaskFormProps = {
   /** Null for a goal that holds its tasks directly, with no milestones. */
   milestoneId?: string | null;
   placeholder?: string;
+  /**
+   * The closed state's wording. Worth setting on the goal-level form when the goal
+   * also has milestones, where a bare "Add a task" does not say where it lands.
+   */
+  label?: string;
   /** Start expanded — useful directly under a milestone that has no tasks yet. */
   startOpen?: boolean;
 };
@@ -209,6 +703,7 @@ export type AddTaskFormProps = {
 export function AddTaskForm({
   milestoneId = null,
   placeholder = 'Something you can finish inside a week',
+  label = 'Add a task',
   startOpen = false,
 }: AddTaskFormProps) {
   const reduced = useReducedMotion();
@@ -243,7 +738,7 @@ export function AddTaskForm({
     return (
       <button type="button" onClick={() => setOpen(true)} className={`${ghostClass} -ml-2`}>
         <Plus />
-        Add a task
+        {label}
       </button>
     );
   }
@@ -398,6 +893,7 @@ export function MilestoneRowControls({
     editable,
     isPending,
     celebrating,
+    toast,
     completeMilestone,
     reopenMilestone,
     saveEvidence,
@@ -409,6 +905,12 @@ export function MilestoneRowControls({
     setCapturing(false);
     setEditing(false);
   }, []);
+
+  /* The database CHECK behind "a milestone cannot be done with both evidence
+     fields empty" comes back as a 422 with a sentence attached. It is about the
+     two fields you are looking at, so it belongs under them and not only in a
+     toast at the foot of the page. */
+  const failure = toast?.tone === 'error' ? toast.message : null;
 
   if (!editable) return null;
 
@@ -481,6 +983,7 @@ export function MilestoneRowControls({
         milestoneTitle={milestone.title}
         mode="capture"
         busy={pending}
+        error={failure}
         onSubmit={async (value) => {
           const ok = await completeMilestone(milestone, value, { remainingTaskIds });
           if (ok) close();
@@ -493,6 +996,7 @@ export function MilestoneRowControls({
         milestoneTitle={milestone.title}
         mode="edit"
         busy={pending}
+        error={failure}
         initial={{
           evidenceUrl: milestone.evidenceUrl ?? null,
           evidenceNote: milestone.evidenceNote ?? null,
@@ -656,6 +1160,20 @@ function Plus() {
   return (
     <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden focusable="false">
       <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Pencil() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden focusable="false">
+      <path
+        d="M8.2 1.6 10.4 3.8 4.3 9.9 1.5 10.5l.6-2.8z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

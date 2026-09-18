@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -11,7 +12,18 @@ import {
 } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
-import type { InlineEditController } from './useInlineEdit';
+import MasterTable, { type CellSlot, type TableEditors } from './Table';
+import {
+  EFFORTS,
+  ITEM_STATUSES,
+  STATUS_LABEL,
+  type IsoDate,
+  type ItemStatus,
+  type MasterTableData,
+  type RowType,
+  type TableRow,
+} from './presets';
+import { useInlineEdit, type CareerEntity, type InlineEditController } from './useInlineEdit';
 
 /**
  * One cell of the master table, in both of its moods.
@@ -166,6 +178,16 @@ export type EditableCellProps = {
   /** Applied to the cell wrapper, for the fixed column widths of the table. */
   style?: CSSProperties;
   title?: string;
+  /**
+   * Extra classes for the open input only.
+   *
+   * The narrow columns are the reason this exists: Target is 86px wide, and a
+   * native date input rendered at 68px clips `dd/mm/yyyy` into something you
+   * cannot read or type into. A right-aligned cell can give its input a
+   * `min-w-` and let it grow leftwards over the column before it, which is free
+   * — that column is only ever a figure, and only while you are editing.
+   */
+  editorClassName?: string;
 };
 
 /* ------------------------------------------------------------------ helpers */
@@ -217,6 +239,7 @@ export function EditableCell({
   className = '',
   style,
   title,
+  editorClassName = '',
 }: EditableCellProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -363,7 +386,7 @@ export function EditableCell({
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
         setDraft(event.target.value),
       onBlur: () => commit(draft),
-      className: `w-full rounded-[3px] border px-1.5 py-1 text-[13px] text-ink placeholder:text-ink-muted ${EDITING} ${TAP} ${width} ${TEXT_ALIGN[align]}`,
+      className: `w-full rounded-[3px] border px-1.5 py-1 text-[13px] text-ink placeholder:text-ink-muted ${EDITING} ${TAP} ${width} ${TEXT_ALIGN[align]} ${editorClassName}`,
     };
 
     if (kind === 'longtext') {
@@ -482,9 +505,15 @@ function Shell({
 
   return (
     <span
+      // `z-30` only while a message is up, and it is load-bearing: the popover
+      // hangs below the row, and the cells of the NEXT row are painted after
+      // this one, so without a z-index on the cell itself they cover the
+      // message — `isolate` scopes the popover's own z-20 to this span and
+      // cannot lift the span past its siblings. Not permanent, because a
+      // z-index on all 200 cells would also outrank the sticky header.
       className={`relative isolate flex min-w-0 items-center rounded-[3px] ${FLEX_ALIGN[align]} ${
         marked ? DONE_TINT : ''
-      } ${pending ? 'opacity-60' : ''} ${className ?? ''}`}
+      } ${pending ? 'opacity-60' : ''} ${error ? 'z-30' : ''} ${className ?? ''}`}
       style={style}
     >
       {/*
@@ -508,32 +537,56 @@ function Shell({
 
       <AnimatePresence>
         {error ? (
-          <motion.span
-            id={errorId}
-            role="alert"
-            // An error must never be withheld pending an animation, so under
-            // reduced motion it is simply already in its final state.
-            initial={still ? false : { opacity: 0, y: -3 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={still ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: still ? 0 : 0.16 }}
-            className="absolute left-0 top-full z-20 mt-1 flex w-max max-w-[240px] items-start gap-1.5 rounded-md border border-overdue bg-overdue-soft px-2.5 py-1.5 text-left text-[11.5px] leading-snug text-ink shadow-panel"
-          >
-            <span className="min-w-0">{error}</span>
-            {onDismissError ? (
-              <button
-                type="button"
-                onClick={onDismissError}
-                aria-label="Dismiss this message"
-                className="-my-1.5 -mr-1.5 flex shrink-0 items-center justify-center self-stretch px-1.5 text-[13px] leading-none text-ink-muted transition-colors hover:text-ink"
-              >
-                ×
-              </button>
-            ) : null}
-          </motion.span>
+          <CellError id={errorId} message={error} onDismiss={onDismissError} />
         ) : null}
       </AnimatePresence>
     </span>
+  );
+}
+
+/**
+ * The message a rejected write leaves behind, anchored under the control that
+ * caused it. Its own component because the tick box is not an `EditableCell`
+ * and still has to be able to say "this milestone needs evidence first" in the
+ * same voice and the same place.
+ *
+ * Always rendered inside an `AnimatePresence` and a `relative` parent.
+ */
+export function CellError({
+  id,
+  message,
+  onDismiss,
+}: {
+  id: string;
+  message: string;
+  onDismiss?: () => void;
+}) {
+  const still = useReducedMotion();
+
+  return (
+    <motion.span
+      id={id}
+      role="alert"
+      // An error must never be withheld pending an animation, so under reduced
+      // motion it is simply already in its final state.
+      initial={still ? false : { opacity: 0, y: -3 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={still ? { opacity: 1 } : { opacity: 0 }}
+      transition={{ duration: still ? 0 : 0.16 }}
+      className="absolute left-0 top-full z-20 mt-1 flex w-max max-w-[240px] items-start gap-1.5 rounded-md border border-overdue bg-overdue-soft px-2.5 py-1.5 text-left text-[11.5px] leading-snug text-ink shadow-panel"
+    >
+      <span className="min-w-0">{message}</span>
+      {onDismiss ? (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss this message"
+          className="-my-1.5 -mr-1.5 flex shrink-0 items-center justify-center self-stretch px-1.5 text-[13px] leading-none text-ink-muted transition-colors hover:text-ink"
+        >
+          ×
+        </button>
+      ) : null}
+    </motion.span>
   );
 }
 
@@ -597,6 +650,430 @@ export function UndoToast({ controller }: { controller: InlineEditController }) 
         </motion.div>
       ) : null}
     </AnimatePresence>
+  );
+}
+
+/* ==========================================================================
+   The seam: the master table, wired to the API.
+   ==========================================================================
+
+   `Table.tsx` is presentational and stays that way. It exposes one hole per
+   editable cell (`TableEditors`), and everything below fills those holes. The
+   public tree imports `Table` directly and passes no `editors`, so not one line
+   of this file is reachable from /career — the read-only table is read-only
+   because the mutation code is never handed to it, not because a flag is off.
+
+   Which cell edits what is decided by the row's own type, and the rule is that
+   a cell is editable exactly when the row OWNS that field:
+
+     - a task has no competency of its own; it inherits its goal's, and offering
+       to change it here would silently rewrite every sibling row's competency.
+     - a task has no target date and a milestone has no effort — those columns
+       are structurally empty for that type, not merely unset.
+     - a win is a thing that already happened. It has no status to move.
+
+   Anything not owned falls back to `readOnly`, which is the same rendering the
+   public table draws, so no cell ever becomes a lie about what it can do. */
+
+/** The API collection each row type lives in. */
+const ENTITY: Record<RowType, CareerEntity> = {
+  milestone: 'milestones',
+  task: 'tasks',
+  win: 'wins',
+};
+
+const STATUS_OPTIONS: readonly CellOption[] = ITEM_STATUSES.map((status) => ({
+  value: status,
+  label: STATUS_LABEL[status],
+}));
+
+const EFFORT_OPTIONS: readonly CellOption[] = EFFORTS.map((effort) => ({
+  value: effort,
+  label: effort,
+}));
+
+/** Undo copy has to fit a phone-width toast beside the button, so titles clip. */
+function shortTitle(title: string): string {
+  return title.length > 30 ? `${title.slice(0, 29)}…` : title;
+}
+
+/**
+ * Whether a typed evidence value is meant as a link rather than a note. Only
+ * consulted when the cell was empty and so has no field to write back to — once
+ * there is a value, you are editing the field it came from.
+ */
+function looksLikeUrl(value: string): boolean {
+  const text = value.trim();
+  if (/^https?:\/\//i.test(text)) return true;
+  return !/\s/.test(text) && /^[\w-]+(\.[\w-]+)+(\/|\?|$)/.test(text);
+}
+
+type EvidenceField = 'note' | 'url' | null;
+
+/**
+ * Evidence is two columns behind one cell, and this keeps that honest: you edit
+ * the field the value you can see came from, and clearing the cell clears only
+ * that field. A milestone with both a note and a link shows the note as the
+ * label and the link on the ↗ beside it — editing the label must not silently
+ * throw the link away.
+ */
+function evidenceBody(
+  type: RowType,
+  field: EvidenceField,
+  next: string | null,
+): Record<string, unknown> {
+  // A win's note column is `impactNote`; it is NOT NULL, and its route maps an
+  // emptied value back to ''.
+  const noteKey = type === 'win' ? 'impactNote' : 'evidenceNote';
+  if (field === 'note') return { [noteKey]: next };
+  if (field === 'url') return { evidenceUrl: next };
+  return next && looksLikeUrl(next) ? { evidenceUrl: next } : { [noteKey]: next };
+}
+
+/* ------------------------------------------------------------------ the tick */
+
+/**
+ * One click completes a row. No dialog, no confirm, no second field — the undo
+ * toast is what makes that safe, and it replays the server's own inverse PATCH,
+ * so untick-then-undo restores the exact status and date the row had rather
+ * than guessing at `todo`.
+ *
+ * It lives in the wide "Milestone or task" column rather than the 100px Status
+ * column, because a 44px tap target and a status dropdown cannot both fit in
+ * 82px of usable width, and of the two it is the tick that has to be reachable
+ * with a thumb.
+ *
+ * Unticking goes to `todo` rather than back to `doing`: a thing you just said
+ * was not finished is a thing you have not necessarily restarted. Undo is
+ * there, and it is exact.
+ */
+function TickBox({ controller, row }: { controller: InlineEditController; row: TableRow }) {
+  const scope = `${row.id}:tick`;
+  const errorId = useId();
+  const error = controller.errorFor(scope);
+  const pending = controller.isPending(scope);
+  const done = row.status === 'done';
+
+  return (
+    // `z-30` while a message is up — see the note in Shell.
+    <span className={`relative isolate flex shrink-0 items-center ${error ? 'z-30' : ''}`}>
+      <button
+        type="button"
+        aria-pressed={done}
+        aria-label={done ? `Reopen ${row.title}` : `Mark ${row.title} done`}
+        aria-describedby={error ? errorId : undefined}
+        aria-busy={pending || undefined}
+        disabled={pending}
+        onClick={() => {
+          void controller.setStatus(ENTITY[row.type], row.id, done ? 'todo' : 'done', {
+            scope,
+            undoLabel: done
+              ? `Reopened “${shortTitle(row.title)}”`
+              : `Completed “${shortTitle(row.title)}”`,
+          });
+        }}
+        className={`-ml-1 flex items-center justify-center rounded transition-colors disabled:cursor-wait disabled:opacity-60 ${TAP_CONTROL}`}
+      >
+        {/* Colour marks what is done and nothing else: an open box is a neutral
+            rule, and only the filled one spends the signal. */}
+        <span
+          aria-hidden
+          className={`flex h-[15px] w-[15px] items-center justify-center rounded-[3px] border text-[10px] leading-none transition-colors ${
+            done
+              ? 'border-signal bg-signal text-ink-on-signal'
+              : 'border-rule-strong text-transparent hover:border-ink-faint hover:bg-surface-2'
+          }`}
+        >
+          ✓
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {error ? (
+          <CellError
+            id={errorId}
+            message={error.message}
+            onDismiss={() => controller.clearError(scope)}
+          />
+        ) : null}
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/* --------------------------------------------------------------- the editors */
+
+/**
+ * Builds one slot per editable column. Plain functions, not components: `Table`
+ * calls them to render a cell, so nothing here may use a hook — the hooks live
+ * inside `EditableCell` and `TickBox`, which are real components.
+ */
+function buildEditors(
+  controller: InlineEditController,
+  competencyOptions: readonly CellOption[],
+): TableEditors {
+  /** Per-cell pending flag and error, keyed so one bad cell never greys a row. */
+  const state = (row: TableRow, field: string) => {
+    const scope = `${row.id}:${field}`;
+    return {
+      scope,
+      editable: true,
+      pending: controller.isPending(scope),
+      error: controller.errorFor(scope)?.message ?? null,
+      onDismissError: () => controller.clearError(scope),
+    };
+  };
+
+  const status: CellSlot = ({ row, readOnly }) => {
+    // A win has no status to move — it already happened.
+    if (row.type === 'win') return readOnly;
+    const { scope, ...cell } = state(row, 'status');
+
+    return (
+      <EditableCell
+        {...cell}
+        kind="select"
+        label={`Status of ${row.title}`}
+        value={row.status}
+        options={STATUS_OPTIONS}
+        mono
+        marked={row.status === 'done'}
+        onCommit={(next) => {
+          if (!next) return;
+          return controller.setStatus(ENTITY[row.type], row.id, next, {
+            scope,
+            undoLabel: `“${shortTitle(row.title)}” → ${
+              STATUS_LABEL[next as ItemStatus] ?? next
+            }`,
+          });
+        }}
+      />
+    );
+  };
+
+  const title: CellSlot = ({ row }) => {
+    const { scope, ...cell } = state(row, 'title');
+
+    return (
+      <>
+        {row.type === 'win' ? null : <TickBox controller={controller} row={row} />}
+        <EditableCell
+          {...cell}
+          label="Title"
+          value={row.title}
+          className="min-w-0 flex-1"
+          editorClassName="min-w-[180px]"
+          tone={row.status === 'done' ? CELL.muted : CELL.ink}
+          title={row.title}
+          // An emptied title is not silently dropped: the route answers "A task
+          // needs a title", which lands on this cell and says what to do.
+          onCommit={(next) =>
+            controller.patch(
+              ENTITY[row.type],
+              row.id,
+              { title: next },
+              { scope, undoLabel: `Renamed “${shortTitle(row.title)}”` },
+            )
+          }
+        />
+      </>
+    );
+  };
+
+  const competency: CellSlot = ({ row, readOnly }) => {
+    if (row.type === 'task') {
+      // Inherited from the goal, deliberately. Changing it here would move every
+      // other row of that goal too, which is not what this cell looks like it does.
+      return (
+        <span title="A task follows its goal’s competency. Change it on the goal.">
+          {readOnly}
+        </span>
+      );
+    }
+    const { scope, ...cell } = state(row, 'competency');
+
+    return (
+      <EditableCell
+        {...cell}
+        kind="select"
+        label={`Competency of ${row.title}`}
+        value={row.competencyId}
+        options={competencyOptions}
+        mono
+        tone={CELL.muted}
+        onCommit={(next) => {
+          if (!next) return;
+          return controller.patch(
+            ENTITY[row.type],
+            row.id,
+            { competencyId: next },
+            { scope, undoLabel: `Competency on “${shortTitle(row.title)}”` },
+          );
+        }}
+      />
+    );
+  };
+
+  const evidence: CellSlot = ({ row, readOnly }) => {
+    // A task carries no evidence of its own; its milestone does.
+    if (row.type === 'task') return readOnly;
+    const { scope, ...cell } = state(row, 'evidence');
+
+    const note = row.evidenceNote?.trim() ?? '';
+    const url = row.evidenceUrl?.trim() ?? '';
+    const field: EvidenceField = note ? 'note' : url ? 'url' : null;
+
+    return (
+      <span className="flex min-w-0 items-center justify-end gap-1">
+        <EditableCell
+          {...cell}
+          kind={field === 'url' ? 'url' : 'text'}
+          label={`Evidence for ${row.title}`}
+          value={note || url || null}
+          align="right"
+          mono
+          className="min-w-0 flex-1"
+          editorClassName="min-w-[168px]"
+          placeholder="Link or note"
+          title={note && url ? `${note} — ${url}` : note || url || undefined}
+          onCommit={(next) =>
+            controller.patch(ENTITY[row.type], row.id, evidenceBody(row.type, field, next), {
+              scope,
+              undoLabel: `Evidence on “${shortTitle(row.title)}”`,
+            })
+          }
+        />
+        {/* The link survives the cell becoming editable. An <a> cannot live
+            inside the cell's <button>, so it stands beside it as its own
+            control — which is also what makes it tappable. */}
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open the evidence link for ${row.title}`}
+            title={url}
+            className={`flex shrink-0 items-center justify-center rounded text-[12px] leading-none text-ink-muted transition-colors hover:bg-surface hover:text-ink ${TAP_CONTROL}`}
+          >
+            <span aria-hidden>↗</span>
+          </a>
+        ) : null}
+      </span>
+    );
+  };
+
+  const effort: CellSlot = ({ row, readOnly }) => {
+    // Effort is a property of the work, and only a task is work.
+    if (row.type !== 'task') return readOnly;
+    const { scope, ...cell } = state(row, 'effort');
+
+    return (
+      <EditableCell
+        {...cell}
+        kind="select"
+        label={`Effort of ${row.title}`}
+        value={row.effort}
+        options={EFFORT_OPTIONS}
+        align="center"
+        mono
+        tone={CELL.muted}
+        onCommit={(next) => {
+          if (!next) return;
+          return controller.patch(
+            ENTITY[row.type],
+            row.id,
+            { effort: next },
+            { scope, undoLabel: `Effort on “${shortTitle(row.title)}” → ${next}` },
+          );
+        }}
+      />
+    );
+  };
+
+  const target: CellSlot = ({ row, readOnly }) => {
+    // Only milestones store a target date; a goal's horizon is not one.
+    if (row.type !== 'milestone') return readOnly;
+    const { scope, ...cell } = state(row, 'target');
+
+    return (
+      <EditableCell
+        {...cell}
+        kind="date"
+        label={`Target date for ${row.title}`}
+        value={row.targetDate}
+        // The read-only rendering, overdue rule and all, kept verbatim — this
+        // cell edits the date, it does not restate how the table draws one.
+        display={readOnly}
+        align="right"
+        mono
+        // A date input will not fit in 68px, so it grows leftwards over Effort.
+        editorClassName="min-w-[140px]"
+        onCommit={(next) =>
+          controller.patch(
+            ENTITY[row.type],
+            row.id,
+            { targetDate: next },
+            { scope, undoLabel: `Target on “${shortTitle(row.title)}”` },
+          )
+        }
+      />
+    );
+  };
+
+  return { status, title, competency, evidence, effort, target };
+}
+
+/* ------------------------------------------------------------ the admin table */
+
+/**
+ * The master table with every weekly-review field editable in place.
+ *
+ * Rendered only by /career/admin/table. The gate that decides whether this or
+ * the plain `MasterTable` is drawn is cosmetic and known to be — every write
+ * below goes through a route that calls `adminOnly()` for itself, and those
+ * routes also revalidate the public /career tree, so the read-only view cannot
+ * be left showing yesterday.
+ */
+export function EditableMasterTable({ data, today }: { data: MasterTableData; today: IsoDate }) {
+  const controller = useInlineEdit();
+  const { withOverrides } = controller;
+
+  /**
+   * Confirmed writes merged over the server's rows, until `router.refresh()`
+   * lands with the real thing. Done here rather than per cell so the whole row
+   * moves together: tick a task and its Completed date, its wash and its group
+   * all change in the same frame, instead of the one cell you touched changing
+   * and the rest of the line catching up a moment later.
+   */
+  const live = useMemo<MasterTableData>(
+    () => ({
+      competencies: data.competencies,
+      goals: data.goals.map(withOverrides),
+      milestones: data.milestones.map(withOverrides),
+      tasks: data.tasks.map(withOverrides),
+      wins: data.wins.map(withOverrides),
+    }),
+    [data, withOverrides],
+  );
+
+  const competencyOptions = useMemo<CellOption[]>(
+    () =>
+      [...data.competencies]
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((competency) => ({ value: competency.id, label: competency.name })),
+    [data.competencies],
+  );
+
+  const editors = useMemo(
+    () => buildEditors(controller, competencyOptions),
+    [controller, competencyOptions],
+  );
+
+  return (
+    <>
+      <MasterTable data={live} editable today={today} editors={editors} />
+      <UndoToast controller={controller} />
+    </>
   );
 }
 
